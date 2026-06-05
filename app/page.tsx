@@ -1,65 +1,237 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect, useMemo } from 'react';
+import { Producto } from '@/lib/sheets';
+
+type TipoPrecio = 'UNIDAD' | 'EFECTIVO' | 'MAYOR';
+
+export default function RegistrarVenta() {
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
+  const [cantidad, setCantidad] = useState(1);
+  const [tipoPrecio, setTipoPrecio] = useState<TipoPrecio>('EFECTIVO');
+  const [loading, setLoading] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  const [mostrarLista, setMostrarLista] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/productos')
+      .then((r) => r.json())
+      .then((data) => {
+        setProductos(data);
+        setLoading(false);
+      });
+  }, []);
+
+  const productosFiltrados = useMemo(() => {
+    if (!busqueda.trim()) return [];
+    const q = busqueda.toLowerCase();
+    return productos
+      .filter(
+        (p) =>
+          p.nombreComercial.toLowerCase().includes(q) ||
+          p.cod.toLowerCase().includes(q) ||
+          p.descripcion.toLowerCase().includes(q)
+      )
+      .slice(0, 8);
+  }, [busqueda, productos]);
+
+  const precioUnitario = productoSeleccionado
+    ? tipoPrecio === 'UNIDAD'
+      ? productoSeleccionado.precioUnidad
+      : tipoPrecio === 'EFECTIVO'
+      ? productoSeleccionado.precioEfectivo
+      : productoSeleccionado.precioMayor
+    : 0;
+
+  const total = precioUnitario * cantidad;
+  const ganancia = (precioUnitario - (productoSeleccionado?.costo || 0)) * cantidad;
+
+  function seleccionarProducto(p: Producto) {
+    setProductoSeleccionado(p);
+    setBusqueda(p.nombreComercial);
+    setMostrarLista(false);
+  }
+
+  async function registrarVenta() {
+    if (!productoSeleccionado) return;
+    setGuardando(true);
+    setMensaje(null);
+
+    try {
+      const res = await fetch('/api/ventas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cod: productoSeleccionado.cod,
+          nombreComercial: productoSeleccionado.nombreComercial,
+          cantidad,
+          tipoPrecio,
+          precioUnitario,
+          costo: productoSeleccionado.costo,
+        }),
+      });
+
+      if (res.ok) {
+        setMensaje({ tipo: 'ok', texto: '✅ Venta registrada correctamente' });
+        setBusqueda('');
+        setProductoSeleccionado(null);
+        setCantidad(1);
+        setTipoPrecio('EFECTIVO');
+      } else {
+        setMensaje({ tipo: 'error', texto: '❌ Error al registrar la venta' });
+      }
+    } catch {
+      setMensaje({ tipo: 'error', texto: '❌ Error de conexión' });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">Registrar Venta</h1>
+
+      {loading ? (
+        <p className="text-gray-500">Cargando productos...</p>
+      ) : (
+        <div className="bg-white rounded-xl shadow p-6 max-w-xl space-y-5">
+          {/* Buscador */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setMostrarLista(true);
+                if (!e.target.value) setProductoSeleccionado(null);
+              }}
+              placeholder="Buscar por nombre, código o descripción..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {mostrarLista && productosFiltrados.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                {productosFiltrados.map((p) => (
+                  <li
+                    key={p.cod}
+                    onClick={() => seleccionarProducto(p)}
+                    className="px-4 py-2 hover:bg-indigo-50 cursor-pointer text-sm"
+                  >
+                    <span className="font-medium">{p.nombreComercial}</span>
+                    <span className="text-gray-400 ml-2 text-xs">{p.cod}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Detalle del producto */}
+          {productoSeleccionado && (
+            <div className="bg-indigo-50 rounded-lg p-3 text-sm space-y-1">
+              <p>
+                <span className="text-gray-500">Código:</span>{' '}
+                <strong>{productoSeleccionado.cod}</strong>
+              </p>
+              <p>
+                <span className="text-gray-500">Rubro:</span> {productoSeleccionado.rubro}
+              </p>
+              <p>
+                <span className="text-gray-500">Costo:</span> ${productoSeleccionado.costo.toFixed(2)}
+              </p>
+              <div className="flex gap-4 mt-1">
+                <p>
+                  <span className="text-gray-500">Unidad:</span>{' '}
+                  <strong>${productoSeleccionado.precioUnidad.toFixed(2)}</strong>
+                </p>
+                <p>
+                  <span className="text-gray-500">Efectivo:</span>{' '}
+                  <strong>${productoSeleccionado.precioEfectivo.toFixed(2)}</strong>
+                </p>
+                <p>
+                  <span className="text-gray-500">Mayor:</span>{' '}
+                  <strong>${productoSeleccionado.precioMayor.toFixed(2)}</strong>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Tipo de precio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de precio</label>
+            <div className="flex gap-2">
+              {(['UNIDAD', 'EFECTIVO', 'MAYOR'] as TipoPrecio[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTipoPrecio(t)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    tipoPrecio === t
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cantidad */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+            <input
+              type="number"
+              min={1}
+              value={cantidad}
+              onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+
+          {/* Resumen */}
+          {productoSeleccionado && (
+            <div className="border-t pt-4 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Precio unitario ({tipoPrecio})</span>
+                <span className="font-medium">${precioUnitario.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Cantidad</span>
+                <span className="font-medium">{cantidad}</span>
+              </div>
+              <div className="flex justify-between text-base font-bold text-indigo-700">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-green-600">
+                <span>Ganancia estimada</span>
+                <span>${ganancia.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Botón */}
+          <button
+            onClick={registrarVenta}
+            disabled={!productoSeleccionado || guardando}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
           >
-            Documentation
-          </a>
+            {guardando ? 'Guardando...' : 'Registrar Venta'}
+          </button>
+
+          {mensaje && (
+            <p
+              className={`text-sm text-center font-medium ${
+                mensaje.tipo === 'ok' ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {mensaje.texto}
+            </p>
+          )}
         </div>
-      </main>
+      )}
     </div>
   );
 }
