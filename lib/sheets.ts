@@ -1,4 +1,7 @@
 import { google } from 'googleapis';
+import type { Producto, Venta } from './types';
+
+export type { Producto, Venta };
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_PRODUCTOS = 'BASE DE DATOS';
@@ -12,34 +15,6 @@ function getAuth() {
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
-}
-
-export interface Producto {
-  cod: string;
-  rubro: string;
-  descripcion: string;
-  nombreComercial: string;
-  costo: number;
-  margenFinan: number;
-  margenEfectivo: number;
-  margenMayor: number;
-  iva: number;
-  precioUnidad: number;
-  precioEfectivo: number;
-  precioMayor: number;
-}
-
-export interface Venta {
-  id: string;
-  fecha: string;
-  cod: string;
-  nombreComercial: string;
-  cantidad: number;
-  tipoPrecio: 'UNIDAD' | 'EFECTIVO' | 'MAYOR';
-  precioUnitario: number;
-  total: number;
-  costo: number;
-  ganancia: number;
 }
 
 export async function getProductos(): Promise<Producto[]> {

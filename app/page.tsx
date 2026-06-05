@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Producto } from '@/lib/sheets';
+import { Producto } from '@/lib/types';
 
 type TipoPrecio = 'UNIDAD' | 'EFECTIVO' | 'MAYOR';
 

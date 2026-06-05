@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Venta } from '@/lib/sheets';
+import { Venta } from '@/lib/types';
 
 export default function Reportes() {
   const [ventas, setVentas] = useState<Venta[]>([]);
