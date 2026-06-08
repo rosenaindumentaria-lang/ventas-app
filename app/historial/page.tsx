@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Venta } from '@/lib/types';
+import { formatPrecio } from '@/lib/format';
 
 export default function Historial() {
   const [ventas, setVentas] = useState<Venta[]>([]);
@@ -84,11 +85,11 @@ export default function Historial() {
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Total vendido</p>
-          <p className="text-2xl font-bold text-indigo-700">${totalFiltrado.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-indigo-700">{formatPrecio(totalFiltrado)}</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Ganancia</p>
-          <p className="text-2xl font-bold text-green-600">${gananciaFiltrada.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-green-600">{formatPrecio(gananciaFiltrada)}</p>
         </div>
       </div>
 
@@ -124,9 +125,9 @@ export default function Historial() {
                       {v.tipoPrecio}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">${v.precioUnitario.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right font-semibold">${v.total.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-green-600">${v.ganancia.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right">{formatPrecio(v.precioUnitario)}</td>
+                  <td className="px-4 py-3 text-right font-semibold">{formatPrecio(v.total)}</td>
+                  <td className="px-4 py-3 text-right text-green-600">{formatPrecio(v.ganancia)}</td>
                 </tr>
               ))}
             </tbody>

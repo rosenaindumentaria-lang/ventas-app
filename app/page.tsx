@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Producto } from '@/lib/types';
+import { formatPrecio } from '@/lib/format';
 
 type TipoPrecio = 'UNIDAD' | 'EFECTIVO' | 'MAYOR';
 
@@ -139,20 +140,21 @@ export default function RegistrarVenta() {
                 <span className="text-gray-500">Rubro:</span> {productoSeleccionado.rubro}
               </p>
               <p>
-                <span className="text-gray-500">Costo:</span> ${productoSeleccionado.costo.toFixed(2)}
+                <span className="text-gray-500">Costo:</span>{' '}
+                {formatPrecio(productoSeleccionado.costo)}
               </p>
               <div className="flex gap-4 mt-1">
                 <p>
                   <span className="text-gray-500">Unidad:</span>{' '}
-                  <strong>${productoSeleccionado.precioUnidad.toFixed(2)}</strong>
+                  <strong>{formatPrecio(productoSeleccionado.precioUnidad)}</strong>
                 </p>
                 <p>
                   <span className="text-gray-500">Efectivo:</span>{' '}
-                  <strong>${productoSeleccionado.precioEfectivo.toFixed(2)}</strong>
+                  <strong>{formatPrecio(productoSeleccionado.precioEfectivo)}</strong>
                 </p>
                 <p>
                   <span className="text-gray-500">Mayor:</span>{' '}
-                  <strong>${productoSeleccionado.precioMayor.toFixed(2)}</strong>
+                  <strong>{formatPrecio(productoSeleccionado.precioMayor)}</strong>
                 </p>
               </div>
             </div>
@@ -195,7 +197,7 @@ export default function RegistrarVenta() {
             <div className="border-t pt-4 space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Precio unitario ({tipoPrecio})</span>
-                <span className="font-medium">${precioUnitario.toFixed(2)}</span>
+                <span className="font-medium">{formatPrecio(precioUnitario)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Cantidad</span>
@@ -203,11 +205,11 @@ export default function RegistrarVenta() {
               </div>
               <div className="flex justify-between text-base font-bold text-indigo-700">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{formatPrecio(total)}</span>
               </div>
               <div className="flex justify-between text-green-600">
                 <span>Ganancia estimada</span>
-                <span>${ganancia.toFixed(2)}</span>
+                <span>{formatPrecio(ganancia)}</span>
               </div>
             </div>
           )}

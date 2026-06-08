@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Venta } from '@/lib/types';
+import { formatPrecio } from '@/lib/format';
 
 export default function Reportes() {
   const [ventas, setVentas] = useState<Venta[]>([]);
@@ -82,15 +83,15 @@ export default function Reportes() {
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Total vendido</p>
-          <p className="text-3xl font-bold text-indigo-700">${totalVendido.toFixed(0)}</p>
+          <p className="text-3xl font-bold text-indigo-700">{formatPrecio(totalVendido)}</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Ganancia</p>
-          <p className="text-3xl font-bold text-green-600">${totalGanancia.toFixed(0)}</p>
+          <p className="text-3xl font-bold text-green-600">{formatPrecio(totalGanancia)}</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Costo total</p>
-          <p className="text-3xl font-bold text-red-500">${totalCosto.toFixed(0)}</p>
+          <p className="text-3xl font-bold text-red-500">{formatPrecio(totalCosto)}</p>
         </div>
       </div>
 
@@ -111,7 +112,7 @@ export default function Reportes() {
                       style={{ width: `${(total / maxDia) * 100}%` }}
                     />
                   </div>
-                  <span className="text-gray-700 font-medium w-20 text-right">${total.toFixed(0)}</span>
+                  <span className="text-gray-700 font-medium w-20 text-right">{formatPrecio(total)}</span>
                 </div>
               ))}
             </div>
@@ -129,7 +130,7 @@ export default function Reportes() {
                 <div key={tipo}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">{tipo}</span>
-                    <span className="font-medium">${val.toFixed(0)} ({pct.toFixed(0)}%)</span>
+                    <span className="font-medium">{formatPrecio(val)} ({pct.toFixed(0)}%)</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-3">
                     <div
@@ -168,8 +169,8 @@ export default function Reportes() {
                   <td className="px-5 py-3 text-gray-400">{i + 1}</td>
                   <td className="px-5 py-3 font-medium text-gray-800">{p.nombre}</td>
                   <td className="px-5 py-3 text-center">{p.cantidad}</td>
-                  <td className="px-5 py-3 text-right font-semibold">${p.total.toFixed(2)}</td>
-                  <td className="px-5 py-3 text-right text-green-600">${p.ganancia.toFixed(2)}</td>
+                  <td className="px-5 py-3 text-right font-semibold">{formatPrecio(p.total)}</td>
+                  <td className="px-5 py-3 text-right text-green-600">{formatPrecio(p.ganancia)}</td>
                 </tr>
               ))}
             </tbody>
