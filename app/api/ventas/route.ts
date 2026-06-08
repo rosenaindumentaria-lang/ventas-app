@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error registrando venta:', error);
-    return NextResponse.json({ error: 'Error al registrar venta' }, { status: 500 });
+    const detalle = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Error al registrar venta', detalle }, { status: 500 });
   }
 }

@@ -82,7 +82,8 @@ export default function RegistrarVenta() {
         setCantidad(1);
         setTipoPrecio('EFECTIVO');
       } else {
-        setMensaje({ tipo: 'error', texto: '❌ Error al registrar la venta' });
+        const data = await res.json().catch(() => ({}));
+        setMensaje({ tipo: 'error', texto: `❌ ${data.detalle || data.error || 'Error al registrar la venta'}` });
       }
     } catch {
       setMensaje({ tipo: 'error', texto: '❌ Error de conexión' });
