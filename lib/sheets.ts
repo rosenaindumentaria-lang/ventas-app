@@ -17,6 +17,18 @@ function getAuth() {
   });
 }
 
+// Parsea precios en formato argentino: $42.248 → 42248, $1.234,56 → 1234.56
+function parsePrecio(val: string | undefined): number {
+  if (!val) return 0;
+  const str = val.toString().replace(/\s/g, '').replace('$', '');
+  // Si tiene coma → es separador decimal (ej: 1.234,56)
+  if (str.includes(',')) {
+    return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+  }
+  // Sin coma → el punto es separador de miles (ej: 42.248)
+  return parseFloat(str.replace(/\./g, '')) || 0;
+}
+
 export async function getProductos(): Promise<Producto[]> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
@@ -38,14 +50,14 @@ export async function getProductos(): Promise<Producto[]> {
       rubro: row[1] || '',
       descripcion: row[2] || '',
       nombreComercial: row[3] || '',
-      costo: parseFloat((row[5] || '').toString().replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
+      costo: parsePrecio(row[5]),
       margenFinan: parseFloat(row[7]) || 0,
       margenEfectivo: parseFloat(row[8]) || 0,
       margenMayor: parseFloat(row[9]) || 0,
       iva: parseFloat(row[10]) || 0,
-      precioUnidad: parseFloat((row[11] || '').toString().replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
-      precioEfectivo: parseFloat((row[12] || '').toString().replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
-      precioMayor: parseFloat((row[13] || '').toString().replace(/[^0-9.,]/g, '').replace(',', '.')) || 0,
+      precioUnidad: parsePrecio(row[11]),
+      precioEfectivo: parsePrecio(row[12]),
+      precioMayor: parsePrecio(row[13]),
     }));
 }
 
