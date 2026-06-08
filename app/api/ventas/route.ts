@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getVentas, registrarVenta } from '@/lib/sheets';
+import { getVentas, registrarVenta, borrarVenta, editarVenta } from '@/lib/sheets';
 
 export async function GET() {
   try {
@@ -41,5 +41,37 @@ export async function POST(request: Request) {
     console.error('Error registrando venta:', error);
     const detalle = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: 'Error al registrar venta', detalle }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Falta el ID' }, { status: 400 });
+
+    await borrarVenta(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error borrando venta:', error);
+    const detalle = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Error al borrar venta', detalle }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, cantidad } = body;
+    if (!id || !cantidad || cantidad < 1) {
+      return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
+    }
+
+    await editarVenta(id, cantidad);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error editando venta:', error);
+    const detalle = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Error al editar venta', detalle }, { status: 500 });
   }
 }

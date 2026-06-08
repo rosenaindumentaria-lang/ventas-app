@@ -79,12 +79,12 @@ export async function getVentas(): Promise<Venta[]> {
         fecha: row[1] || '',
         cod: row[2] || '',
         nombreComercial: row[3] || '',
-        cantidad: parseFloat(row[4]) || 0,
+        cantidad: parsePrecio(row[4]),
         tipoPrecio: row[5] as 'UNIDAD' | 'EFECTIVO' | 'MAYOR',
-        precioUnitario: parseFloat(row[6]) || 0,
-        total: parseFloat(row[7]) || 0,
-        costo: parseFloat(row[8]) || 0,
-        ganancia: parseFloat(row[9]) || 0,
+        precioUnitario: parsePrecio(row[6]),
+        total: parsePrecio(row[7]),
+        costo: parsePrecio(row[8]),
+        ganancia: parsePrecio(row[9]),
       }));
   } catch {
     return [];
@@ -117,6 +117,96 @@ export async function registrarVenta(venta: Omit<Venta, 'id'>): Promise<void> {
     range: `${SHEET_VENTAS}!A:J`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
+  });
+}
+
+// Devuelve el número de fila (1-based) de una venta según su ID, o null si no existe
+async function buscarFilaVenta(
+  sheets: ReturnType<typeof google.sheets>,
+  id: string
+): Promise<number | null> {
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_VENTAS}!A2:A10000`,
+  });
+  const ids = response.data.values || [];
+  const index = ids.findIndex((r) => (r[0] || '').toString() === id.toString());
+  return index === -1 ? null : index + 2; // +2 porque empieza en fila 2
+}
+
+// Obtiene el ID interno (gid) de la hoja Ventas
+async function getSheetIdVentas(sheets: ReturnType<typeof google.sheets>): Promise<number> {
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hoja = (spreadsheet.data.sheets || []).find(
+    (s) => (s.properties?.title || '').trim().toLowerCase() === SHEET_VENTAS.toLowerCase()
+  );
+  return hoja?.properties?.sheetId ?? 0;
+}
+
+export async function borrarVenta(id: string): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = await buscarFilaVenta(sheets, id);
+  if (!fila) throw new Error('No se encontró la venta');
+
+  const sheetId = await getSheetIdVentas(sheets);
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: 'ROWS',
+              startIndex: fila - 1, // 0-based
+              endIndex: fila,
+            },
+          },
+        },
+      ],
+    },
+  });
+}
+
+export async function editarVenta(id: string, cantidad: number): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = await buscarFilaVenta(sheets, id);
+  if (!fila) throw new Error('No se encontró la venta');
+
+  // Leer la fila actual para recalcular total y ganancia
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_VENTAS}!A${fila}:J${fila}`,
+  });
+  const row = response.data.values?.[0] || [];
+  const precioUnitario = parsePrecio(row[6]);
+  const costo = parsePrecio(row[8]);
+  const total = precioUnitario * cantidad;
+  const ganancia = (precioUnitario - costo) * cantidad;
+
+  // Actualizar cantidad (E), total (H) y ganancia (J)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_VENTAS}!E${fila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[cantidad]] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_VENTAS}!H${fila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[total]] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_VENTAS}!J${fila}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [[ganancia]] },
   });
 }
 
