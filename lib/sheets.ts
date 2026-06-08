@@ -121,15 +121,21 @@ export async function registrarVenta(venta: Omit<Venta, 'id'>): Promise<void> {
 }
 
 async function ensureVentasSheet(sheets: ReturnType<typeof google.sheets>) {
-  // Verificar si existe la hoja Ventas
+  // Verificar si existe la hoja Ventas (comparando sin espacios y sin distinguir mayúsculas)
   const spreadsheet = await sheets.spreadsheets.get({
     spreadsheetId: SPREADSHEET_ID,
   });
 
-  const hojas = spreadsheet.data.sheets?.map((s) => s.properties?.title) || [];
+  const hojas = (spreadsheet.data.sheets || []).map((s) =>
+    (s.properties?.title || '').trim().toLowerCase()
+  );
 
-  if (!hojas.includes(SHEET_VENTAS)) {
-    // Crear la hoja
+  if (hojas.includes(SHEET_VENTAS.toLowerCase())) {
+    return; // La hoja ya existe, no hacer nada
+  }
+
+  // Crear la hoja (si falla porque ya existe, lo ignoramos)
+  try {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
       requestBody: {
@@ -146,5 +152,11 @@ async function ensureVentasSheet(sheets: ReturnType<typeof google.sheets>) {
         values: [['ID', 'FECHA', 'COD', 'NOMBRE COMERCIAL', 'CANTIDAD', 'TIPO PRECIO', 'PRECIO UNITARIO', 'TOTAL', 'COSTO', 'GANANCIA']],
       },
     });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    // Si el error es porque la hoja ya existe, lo ignoramos y seguimos
+    if (!msg.includes('already exists')) {
+      throw error;
+    }
   }
 }
