@@ -68,7 +68,7 @@ export async function getVentas(): Promise<Venta[]> {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_VENTAS}!A2:J10000`,
+      range: `${SHEET_VENTAS}!A2:K10000`,
     });
 
     const rows = response.data.values || [];
@@ -76,15 +76,16 @@ export async function getVentas(): Promise<Venta[]> {
       .filter((row) => row[0])
       .map((row) => ({
         id: row[0] || '',
-        fecha: row[1] || '',
-        cod: row[2] || '',
+        origen: row[1] || '',
+        fecha: row[2] || '',
         nombreComercial: row[3] || '',
-        cantidad: parsePrecio(row[4]),
-        tipoPrecio: row[5] as 'UNIDAD' | 'EFECTIVO' | 'MAYOR',
-        precioUnitario: parsePrecio(row[6]),
-        total: parsePrecio(row[7]),
-        costo: parsePrecio(row[8]),
-        ganancia: parsePrecio(row[9]),
+        cod: row[4] || '',
+        cantidad: parsePrecio(row[5]),
+        tipoPrecio: row[6] as 'UNIDAD' | 'EFECTIVO' | 'MAYOR',
+        precioUnitario: parsePrecio(row[7]),
+        total: parsePrecio(row[8]),
+        costo: parsePrecio(row[9]),
+        ganancia: parsePrecio(row[10]),
       }));
   } catch {
     return [];
@@ -101,9 +102,10 @@ export async function registrarVenta(venta: Omit<Venta, 'id'>): Promise<void> {
   const id = Date.now().toString();
   const row = [
     id,
+    venta.origen,
     venta.fecha,
-    venta.cod,
     venta.nombreComercial,
+    venta.cod,
     venta.cantidad,
     venta.tipoPrecio,
     venta.precioUnitario,
@@ -114,7 +116,7 @@ export async function registrarVenta(venta: Omit<Venta, 'id'>): Promise<void> {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!A:J`,
+    range: `${SHEET_VENTAS}!A:K`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -171,40 +173,40 @@ export async function borrarVenta(id: string): Promise<void> {
   });
 }
 
-export async function editarVenta(id: string, cantidad: number): Promise<void> {
+export async function editarVenta(id: string, cantidad: number, costoReal?: number): Promise<void> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
   const fila = await buscarFilaVenta(sheets, id);
   if (!fila) throw new Error('No se encontró la venta');
 
-  // Leer la fila actual para recalcular total y ganancia
+  // Leer la fila actual para obtener precioUnitario y cod
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!A${fila}:J${fila}`,
+    range: `${SHEET_VENTAS}!A${fila}:K${fila}`,
   });
   const row = response.data.values?.[0] || [];
-  const precioUnitario = parsePrecio(row[6]);
-  const costo = parsePrecio(row[8]);
+  const precioUnitario = parsePrecio(row[7]);
+  const costo = costoReal ?? parsePrecio(row[9]);
   const total = precioUnitario * cantidad;
   const ganancia = (precioUnitario - costo) * cantidad;
 
-  // Actualizar cantidad (E), total (H) y ganancia (J)
+  // Actualizar cantidad (F), total (I) y ganancia (K)
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!E${fila}`,
+    range: `${SHEET_VENTAS}!F${fila}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[cantidad]] },
   });
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!H${fila}`,
+    range: `${SHEET_VENTAS}!I${fila}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[total]] },
   });
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!J${fila}`,
+    range: `${SHEET_VENTAS}!K${fila}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[ganancia]] },
   });
@@ -236,10 +238,10 @@ async function ensureVentasSheet(sheets: ReturnType<typeof google.sheets>) {
     // Agregar encabezados
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_VENTAS}!A1:J1`,
+      range: `${SHEET_VENTAS}!A1:K1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [['ID', 'FECHA', 'COD', 'NOMBRE COMERCIAL', 'CANTIDAD', 'TIPO PRECIO', 'PRECIO UNITARIO', 'TOTAL', 'COSTO', 'GANANCIA']],
+        values: [['ID', 'ORIGEN', 'FECHA', 'NOMBRE COMERCIAL', 'COD', 'CANTIDAD', 'TIPO PRECIO', 'PRECIO UNITARIO', 'TOTAL', 'COSTO', 'GANANCIA']],
       },
     });
   } catch (error) {

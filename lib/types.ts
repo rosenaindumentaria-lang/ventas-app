@@ -15,6 +15,7 @@ export interface Producto {
 
 export interface Venta {
   id: string;
+  origen: string;
   fecha: string;
   cod: string;
   nombreComercial: string;

@@ -152,6 +152,7 @@ export default function Historial() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
+                <th className="px-4 py-3 text-left">Origen</th>
                 <th className="px-4 py-3 text-left">Fecha</th>
                 <th className="px-4 py-3 text-left">Producto</th>
                 <th className="px-4 py-3 text-left">Código</th>
@@ -166,6 +167,7 @@ export default function Historial() {
             <tbody className="divide-y divide-gray-100">
               {ventasFiltradas.map((v) => (
                 <tr key={v.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-500">{v.origen}</td>
                   <td className="px-4 py-3 text-gray-500">{v.fecha}</td>
                   <td className="px-4 py-3 font-medium text-gray-800">{v.nombreComercial}</td>
                   <td className="px-4 py-3 text-gray-500">{v.cod}</td>

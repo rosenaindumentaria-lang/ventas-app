@@ -12,6 +12,7 @@ export default function RegistrarVenta() {
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [cantidad, setCantidad] = useState(1);
   const [tipoPrecio, setTipoPrecio] = useState<TipoPrecio>('EFECTIVO');
+  const [origen, setOrigen] = useState('');
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
@@ -66,6 +67,7 @@ export default function RegistrarVenta() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          origen,
           cod: productoSeleccionado.cod,
           nombreComercial: productoSeleccionado.nombreComercial,
           cantidad,
@@ -81,6 +83,7 @@ export default function RegistrarVenta() {
         setProductoSeleccionado(null);
         setCantidad(1);
         setTipoPrecio('EFECTIVO');
+        setOrigen('');
       } else {
         const data = await res.json().catch(() => ({}));
         setMensaje({ tipo: 'error', texto: `❌ ${data.detalle || data.error || 'Error al registrar la venta'}` });
@@ -100,6 +103,34 @@ export default function RegistrarVenta() {
         <p className="text-gray-500">Cargando productos...</p>
       ) : (
         <div className="bg-white rounded-xl shadow p-6 max-w-xl space-y-5">
+          {/* Origen */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Origen</label>
+            <div className="flex gap-2 flex-wrap">
+              {(['Inta', 'Face', 'Local', 'Otro'] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setOrigen(op === origen ? '' : op)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    origen === op
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {op}
+                </button>
+              ))}
+              <input
+                type="text"
+                value={['Inta', 'Face', 'Local', 'Otro'].includes(origen) ? '' : origen}
+                onChange={(e) => setOrigen(e.target.value)}
+                placeholder="Otro origen..."
+                className="flex-1 min-w-[120px] border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            </div>
+          </div>
+
           {/* Buscador */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">Producto</label>

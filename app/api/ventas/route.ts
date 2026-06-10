@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getVentas, registrarVenta, borrarVenta, editarVenta } from '@/lib/sheets';
+import { getVentas, registrarVenta, borrarVenta, editarVenta, getProductos } from '@/lib/sheets';
 
 export async function GET() {
   try {
-    const ventas = await getVentas();
-    return NextResponse.json(ventas);
+    const [ventas, productos] = await Promise.all([getVentas(), getProductos()]);
+    const costoPorCod = new Map(productos.map((p) => [p.cod, p.costo]));
+
+    const ventasConGanancia = ventas.map((v) => {
+      const costo = costoPorCod.get(v.cod) ?? v.costo;
+      const ganancia = (v.precioUnitario - costo) * v.cantidad;
+      return { ...v, costo, ganancia };
+    });
+
+    return NextResponse.json(ventasConGanancia);
   } catch (error) {
     console.error('Error fetching ventas:', error);
     return NextResponse.json({ error: 'Error al obtener ventas' }, { status: 500 });
@@ -14,7 +22,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { cod, nombreComercial, cantidad, tipoPrecio, precioUnitario, costo } = body;
+    const { origen, cod, nombreComercial, cantidad, tipoPrecio, precioUnitario, costo } = body;
 
     if (!cod || !cantidad || !tipoPrecio || !precioUnitario) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
@@ -25,6 +33,7 @@ export async function POST(request: Request) {
     const fecha = new Date().toISOString().split('T')[0];
 
     await registrarVenta({
+      origen: origen || '',
       fecha,
       cod,
       nombreComercial,
@@ -67,7 +76,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
     }
 
-    await editarVenta(id, cantidad);
+    // Buscar el costo real del producto para recalcular bien la ganancia
+    const [ventas, productos] = await Promise.all([getVentas(), getProductos()]);
+    const venta = ventas.find((v) => v.id === id);
+    const costoPorCod = new Map(productos.map((p) => [p.cod, p.costo]));
+    const costoReal = venta ? (costoPorCod.get(venta.cod) ?? venta.costo) : undefined;
+
+    await editarVenta(id, cantidad, costoReal);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error editando venta:', error);
