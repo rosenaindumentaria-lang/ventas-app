@@ -4,12 +4,13 @@ import { getVentas, registrarVenta, borrarVenta, editarVenta, getProductos } fro
 export async function GET() {
   try {
     const [ventas, productos] = await Promise.all([getVentas(), getProductos()]);
-    const costoPorCod = new Map(productos.map((p) => [p.cod, p.costo]));
+    const porCod = new Map(productos.map((p) => [p.cod, p]));
 
     const ventasConGanancia = ventas.map((v) => {
-      const costo = costoPorCod.get(v.cod) ?? v.costo;
+      const prod = porCod.get(v.cod);
+      const costo = prod?.costo ?? v.costo;
       const ganancia = (v.precioUnitario - costo) * v.cantidad;
-      return { ...v, costo, ganancia };
+      return { ...v, costo, ganancia, rubro: prod?.rubro || 'Sin rubro' };
     });
 
     return NextResponse.json(ventasConGanancia);

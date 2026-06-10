@@ -54,6 +54,23 @@ export default function Reportes() {
 
   const maxDia = Math.max(...ventasPorDia.map(([, t]) => t), 1);
 
+  // Ventas por rubro
+  const porRubro = useMemo(() => {
+    const mapa: Record<string, { total: number; cantidad: number; ganancia: number }> = {};
+    for (const v of ventasMes) {
+      const rubro = v.rubro || 'Sin rubro';
+      if (!mapa[rubro]) mapa[rubro] = { total: 0, cantidad: 0, ganancia: 0 };
+      mapa[rubro].total += v.total;
+      mapa[rubro].cantidad += v.cantidad;
+      mapa[rubro].ganancia += v.ganancia;
+    }
+    return Object.entries(mapa)
+      .map(([rubro, data]) => ({ rubro, ...data }))
+      .sort((a, b) => b.total - a.total);
+  }, [ventasMes]);
+
+  const maxRubro = Math.max(...porRubro.map((r) => r.total), 1);
+
   // Ventas por tipo de precio
   const porTipo = useMemo(() => {
     const mapa: Record<string, number> = { UNIDAD: 0, EFECTIVO: 0, MAYOR: 0 };
@@ -143,6 +160,42 @@ export default function Reportes() {
             })}
           </div>
         </div>
+      </div>
+
+      {/* Ventas por rubro */}
+      <div className="bg-white rounded-xl shadow mt-6 overflow-hidden">
+        <div className="px-5 py-4 border-b flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">Ventas por rubro</h2>
+          {porRubro.length > 0 && (
+            <span className="text-xs text-gray-400">
+              Más vendido:{' '}
+              <span className="font-semibold text-indigo-600">{porRubro[0].rubro}</span>
+            </span>
+          )}
+        </div>
+        {porRubro.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-8">Sin ventas este mes</p>
+        ) : (
+          <div className="p-5 space-y-3">
+            {porRubro.map((r) => (
+              <div key={r.rubro}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-700 font-medium">{r.rubro}</span>
+                  <span className="text-gray-500">
+                    {r.cantidad} u · {formatPrecio(r.total)} ·{' '}
+                    <span className="text-green-600">{formatPrecio(r.ganancia)}</span>
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-3">
+                  <div
+                    className="bg-indigo-500 h-3 rounded-full"
+                    style={{ width: `${(r.total / maxRubro) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Top productos */}

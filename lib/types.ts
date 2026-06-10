@@ -26,6 +26,7 @@ export interface Venta {
   origen: string;
   fecha: string;
   cod: string;
+  rubro?: string;
   nombreComercial: string;
   cantidad: number;
   tipoPrecio: 'UNIDAD' | 'EFECTIVO' | 'MAYOR';
