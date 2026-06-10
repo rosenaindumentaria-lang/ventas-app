@@ -271,6 +271,8 @@ async function ensureVentasSheet(sheets: ReturnType<typeof google.sheets>) {
 
 // ── GASTOS ──────────────────────────────────────────────────────────────────
 
+// Estructura real de la hoja GASTOS: A=FECHA, B=CUENTA, C=OBSERVACION, D=IMPORTE
+// (sin columna ID; usamos el número de fila como identificador para borrar)
 export async function getGastos(): Promise<Gasto[]> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
@@ -278,18 +280,19 @@ export async function getGastos(): Promise<Gasto[]> {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_GASTOS}!A2:E10000`,
+      range: `${SHEET_GASTOS}!A2:D10000`,
     });
 
     const rows = response.data.values || [];
     return rows
-      .filter((row) => row[0])
-      .map((row) => ({
-        id: row[0] || '',
-        fecha: normalizarFecha(row[1] || '', row[0] || ''),
+      .map((row, i) => ({ row, sheetRow: i + 2 }))
+      .filter(({ row }) => row[0] && parsePrecio(row[3]) > 0)
+      .map(({ row, sheetRow }) => ({
+        id: String(sheetRow),
+        fecha: normalizarFecha(row[0] || '', ''),
+        categoria: row[1] || '',
         descripcion: row[2] || '',
-        categoria: row[3] || '',
-        monto: parsePrecio(row[4]),
+        monto: parsePrecio(row[3]),
       }));
   } catch {
     return [];
@@ -302,12 +305,12 @@ export async function registrarGasto(gasto: Omit<Gasto, 'id'>): Promise<void> {
 
   await ensureGastosSheet(sheets);
 
-  const id = Date.now().toString();
-  const row = [id, gasto.fecha, gasto.descripcion, gasto.categoria, gasto.monto];
+  // Orden real de columnas: FECHA, CUENTA, OBSERVACION, IMPORTE
+  const row = [gasto.fecha, gasto.categoria, gasto.descripcion, gasto.monto];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_GASTOS}!A:E`,
+    range: `${SHEET_GASTOS}!A:D`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -317,14 +320,8 @@ export async function borrarGasto(id: string): Promise<void> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_GASTOS}!A2:A10000`,
-  });
-  const ids = response.data.values || [];
-  const index = ids.findIndex((r) => (r[0] || '').toString() === id.toString());
-  if (index === -1) throw new Error('No se encontró el gasto');
-  const fila = index + 2;
+  const fila = parseInt(id, 10);
+  if (!fila || fila < 2) throw new Error('Gasto inválido');
 
   const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
   const hoja = (spreadsheet.data.sheets || []).find(
@@ -360,9 +357,9 @@ async function ensureGastosSheet(sheets: ReturnType<typeof google.sheets>) {
     });
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_GASTOS}!A1:E1`,
+      range: `${SHEET_GASTOS}!A1:D1`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [['ID', 'FECHA', 'DESCRIPCION', 'CATEGORIA', 'MONTO']] },
+      requestBody: { values: [['FECHA', 'CUENTA', 'OBSERVACION', 'IMPORTE']] },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

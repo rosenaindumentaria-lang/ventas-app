@@ -78,7 +78,9 @@ export default function Caja() {
     [gastos, mes]
   );
 
+  const ventasFiltradasTotal = ventasFiltradas.reduce((a, v) => a + v.total, 0);
   const gastosFiltradosTotal = gastosFiltrados.reduce((a, g) => a + g.monto, 0);
+  const resultadoFiltrado = ventasFiltradasTotal - gastosFiltradosTotal;
 
   const gastosPorCategoria = useMemo(() => {
     const mapa: Record<string, number> = {};
@@ -129,6 +131,46 @@ export default function Caja() {
                 Resultado neto (ganancia − gastos):{' '}
                 <strong className="text-white">{formatPrecio(resultadoNetoHist)}</strong>
               </span>
+            </div>
+          </div>
+
+          {/* Filtro por mes + totales del período */}
+          <div className="bg-white rounded-xl shadow p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-700">
+                {mes ? `Resumen de ${nombreMes(mes)}` : 'Resumen de todos los meses'}
+              </h2>
+              <select
+                value={mes}
+                onChange={(e) => setMes(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <option value="">Todos los meses</option>
+                {evolucion
+                  .slice()
+                  .reverse()
+                  .map((e) => (
+                    <option key={e.ym} value={e.ym}>
+                      {nombreMes(e.ym)}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-xs text-gray-500 mb-1">Ventas</p>
+                <p className="text-xl font-bold text-indigo-700">{formatPrecio(ventasFiltradasTotal)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 mb-1">Gastos</p>
+                <p className="text-xl font-bold text-rose-600">{formatPrecio(gastosFiltradosTotal)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 mb-1">Resultado</p>
+                <p className={`text-xl font-bold ${resultadoFiltrado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatPrecio(resultadoFiltrado)}
+                </p>
+              </div>
             </div>
           </div>
 
