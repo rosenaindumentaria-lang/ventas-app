@@ -1,11 +1,12 @@
 import { google } from 'googleapis';
-import type { Producto, Venta } from './types';
+import type { Producto, Venta, Gasto } from './types';
 
-export type { Producto, Venta };
+export type { Producto, Venta, Gasto };
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_PRODUCTOS = 'BASE DE DATOS';
 const SHEET_VENTAS = 'Ventas';
+const SHEET_GASTOS = 'Gastos';
 
 function getAuth() {
   return new google.auth.GoogleAuth({
@@ -265,5 +266,106 @@ async function ensureVentasSheet(sheets: ReturnType<typeof google.sheets>) {
     if (!msg.includes('already exists')) {
       throw error;
     }
+  }
+}
+
+// ── GASTOS ──────────────────────────────────────────────────────────────────
+
+export async function getGastos(): Promise<Gasto[]> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_GASTOS}!A2:E10000`,
+    });
+
+    const rows = response.data.values || [];
+    return rows
+      .filter((row) => row[0])
+      .map((row) => ({
+        id: row[0] || '',
+        fecha: normalizarFecha(row[1] || '', row[0] || ''),
+        descripcion: row[2] || '',
+        categoria: row[3] || '',
+        monto: parsePrecio(row[4]),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+export async function registrarGasto(gasto: Omit<Gasto, 'id'>): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  await ensureGastosSheet(sheets);
+
+  const id = Date.now().toString();
+  const row = [id, gasto.fecha, gasto.descripcion, gasto.categoria, gasto.monto];
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_GASTOS}!A:E`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [row] },
+  });
+}
+
+export async function borrarGasto(id: string): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_GASTOS}!A2:A10000`,
+  });
+  const ids = response.data.values || [];
+  const index = ids.findIndex((r) => (r[0] || '').toString() === id.toString());
+  if (index === -1) throw new Error('No se encontró el gasto');
+  const fila = index + 2;
+
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hoja = (spreadsheet.data.sheets || []).find(
+    (s) => (s.properties?.title || '').trim().toLowerCase() === SHEET_GASTOS.toLowerCase()
+  );
+  const sheetId = hoja?.properties?.sheetId ?? 0;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: { sheetId, dimension: 'ROWS', startIndex: fila - 1, endIndex: fila },
+          },
+        },
+      ],
+    },
+  });
+}
+
+async function ensureGastosSheet(sheets: ReturnType<typeof google.sheets>) {
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hojas = (spreadsheet.data.sheets || []).map((s) =>
+    (s.properties?.title || '').trim().toLowerCase()
+  );
+  if (hojas.includes(SHEET_GASTOS.toLowerCase())) return;
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: SHEET_GASTOS } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_GASTOS}!A1:E1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['ID', 'FECHA', 'DESCRIPCION', 'CATEGORIA', 'MONTO']] },
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (!msg.includes('already exists')) throw error;
   }
 }

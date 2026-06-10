@@ -13,6 +13,14 @@ export interface Producto {
   precioMayor: number;
 }
 
+export interface Gasto {
+  id: string;
+  fecha: string;
+  descripcion: string;
+  categoria: string;
+  monto: number;
+}
+
 export interface Venta {
   id: string;
   origen: string;
