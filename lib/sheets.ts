@@ -17,6 +17,21 @@ function getAuth() {
   });
 }
 
+// Normaliza fecha a YYYY-MM-DD.
+// Soporta: "YYYY-MM-DD", "DD/MM/YYYY", "DD/MM" (infiere año desde el id timestamp)
+function normalizarFecha(fecha: string, id: string): string {
+  if (!fecha) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+  const partes3 = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (partes3) return `${partes3[3]}-${partes3[2].padStart(2, '0')}-${partes3[1].padStart(2, '0')}`;
+  const partes2 = fecha.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (partes2) {
+    const anio = /^\d{13}$/.test(id) ? new Date(parseInt(id)).getFullYear() : new Date().getFullYear();
+    return `${anio}-${partes2[2].padStart(2, '0')}-${partes2[1].padStart(2, '0')}`;
+  }
+  return fecha;
+}
+
 // Parsea precios en formato argentino: $42.248 → 42248, $1.234,56 → 1234.56
 function parsePrecio(val: string | undefined): number {
   if (!val) return 0;
@@ -77,7 +92,7 @@ export async function getVentas(): Promise<Venta[]> {
       .map((row) => ({
         id: row[0] || '',
         origen: row[1] || '',
-        fecha: row[2] || '',
+        fecha: normalizarFecha(row[2] || '', row[0] || ''),
         nombreComercial: row[3] || '',
         cod: row[4] || '',
         cantidad: parsePrecio(row[5]),
