@@ -13,6 +13,8 @@ export default function RegistrarVenta() {
   const [cantidad, setCantidad] = useState(1);
   const [tipoPrecio, setTipoPrecio] = useState<TipoPrecio>('EFECTIVO');
   const [origen, setOrigen] = useState('');
+  const [precioManual, setPrecioManual] = useState(0);
+  const [descuento, setDescuento] = useState(0);
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
@@ -27,6 +29,20 @@ export default function RegistrarVenta() {
       });
   }, []);
 
+  const precioBase = productoSeleccionado
+    ? tipoPrecio === 'UNIDAD'
+      ? productoSeleccionado.precioUnidad
+      : tipoPrecio === 'EFECTIVO'
+      ? productoSeleccionado.precioEfectivo
+      : productoSeleccionado.precioMayor
+    : 0;
+
+  // Sincronizar precio manual cuando cambia producto o tipo
+  useEffect(() => {
+    setPrecioManual(precioBase);
+    setDescuento(0);
+  }, [productoSeleccionado?.cod, tipoPrecio]);
+
   const productosFiltrados = useMemo(() => {
     if (!busqueda.trim()) return [];
     const q = busqueda.toLowerCase();
@@ -40,16 +56,10 @@ export default function RegistrarVenta() {
       .slice(0, 8);
   }, [busqueda, productos]);
 
-  const precioUnitario = productoSeleccionado
-    ? tipoPrecio === 'UNIDAD'
-      ? productoSeleccionado.precioUnidad
-      : tipoPrecio === 'EFECTIVO'
-      ? productoSeleccionado.precioEfectivo
-      : productoSeleccionado.precioMayor
-    : 0;
-
-  const total = precioUnitario * cantidad;
-  const ganancia = (precioUnitario - (productoSeleccionado?.costo || 0)) * cantidad;
+  const descuentoMonto = descuento > 0 ? Math.round(precioManual * (descuento / 100)) : 0;
+  const precioFinal = precioManual - descuentoMonto;
+  const total = precioFinal * cantidad;
+  const ganancia = (precioFinal - (productoSeleccionado?.costo || 0)) * cantidad;
 
   function seleccionarProducto(p: Producto) {
     setProductoSeleccionado(p);
@@ -72,7 +82,7 @@ export default function RegistrarVenta() {
           nombreComercial: productoSeleccionado.nombreComercial,
           cantidad,
           tipoPrecio,
-          precioUnitario,
+          precioUnitario: precioFinal,
           costo: productoSeleccionado.costo,
         }),
       });
@@ -84,6 +94,8 @@ export default function RegistrarVenta() {
         setCantidad(1);
         setTipoPrecio('EFECTIVO');
         setOrigen('');
+        setPrecioManual(0);
+        setDescuento(0);
       } else {
         const data = await res.json().catch(() => ({}));
         setMensaje({ tipo: 'error', texto: `❌ ${data.detalle || data.error || 'Error al registrar la venta'}` });
@@ -212,6 +224,37 @@ export default function RegistrarVenta() {
             </div>
           </div>
 
+          {/* Precio y descuento */}
+          {productoSeleccionado && (
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={precioManual || ''}
+                  onChange={(e) => setPrecioManual(parseFloat(e.target.value) || 0)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+              <div className="w-32">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descuento</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={descuento || ''}
+                    onChange={(e) => setDescuento(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                    placeholder="0"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                  <span className="absolute right-3 top-2 text-gray-400 text-sm">%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Cantidad */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
@@ -227,10 +270,29 @@ export default function RegistrarVenta() {
           {/* Resumen */}
           {productoSeleccionado && (
             <div className="border-t pt-4 space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Precio unitario ({tipoPrecio})</span>
-                <span className="font-medium">{formatPrecio(precioUnitario)}</span>
-              </div>
+              {descuento > 0 ? (
+                <>
+                  <div className="flex justify-between text-gray-400">
+                    <span>Precio base ({tipoPrecio})</span>
+                    <span className="line-through">{formatPrecio(precioManual)}</span>
+                  </div>
+                  <div className="flex justify-between text-orange-500">
+                    <span>Descuento ({descuento}%)</span>
+                    <span>− {formatPrecio(descuentoMonto)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium text-gray-700">
+                    <span>Precio final</span>
+                    <span>{formatPrecio(precioFinal)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">
+                    Precio {precioManual !== precioBase ? 'especial' : `(${tipoPrecio})`}
+                  </span>
+                  <span className="font-medium">{formatPrecio(precioFinal)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Cantidad</span>
                 <span className="font-medium">{cantidad}</span>
