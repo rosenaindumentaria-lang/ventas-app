@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Gasto } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 
-const CATEGORIAS = ['Mercadería', 'Envíos', 'Packaging', 'Marketing', 'Servicios', 'Retiro', 'Otros'];
+const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero'];
 
 export default function Gastos() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -14,7 +14,7 @@ export default function Gastos() {
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
   const [descripcion, setDescripcion] = useState('');
-  const [categoria, setCategoria] = useState('Otros');
+  const [categoria, setCategoria] = useState('Gasto Adm');
   const [monto, setMonto] = useState('');
 
   function cargarGastos() {
@@ -47,7 +47,7 @@ export default function Gastos() {
         setMensaje({ tipo: 'ok', texto: '✅ Gasto registrado' });
         setDescripcion('');
         setMonto('');
-        setCategoria('Otros');
+        setCategoria('Gasto Adm');
         cargarGastos();
       } else {
         const data = await res.json().catch(() => ({}));

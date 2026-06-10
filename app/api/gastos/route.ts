@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     const fecha = new Date().toISOString().split('T')[0];
-    await registrarGasto({ fecha, descripcion, categoria: categoria || 'Otros', monto });
+    await registrarGasto({ fecha, descripcion, categoria: categoria || 'Gasto Adm', monto });
 
     return NextResponse.json({ success: true });
   } catch (error) {
