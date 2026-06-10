@@ -77,6 +77,41 @@ export async function getProductos(): Promise<Producto[]> {
     }));
 }
 
+// Estructura real de la hoja VENTAS:
+// A=FECHA, B=MODALIDAD(origen), C=COMPROBANTE, D=ARTICULO(nombre), E=COD,
+// F=CANTIDAD, G=LISTA DE PRECIO(tipo), H=PRECIO, I=TOTAL, J=OBSERVACIONES,
+// K=(vacía), L=COSTO, M=MG BR, N=ID (agregada por la app para editar/borrar)
+
+// Asegura que cada fila con FECHA tenga un ID en la columna N.
+// Hace backfill de los IDs faltantes en una sola escritura y devuelve el array.
+async function ensureVentaIds(
+  sheets: ReturnType<typeof google.sheets>,
+  rows: string[][]
+): Promise<string[]> {
+  const base = Date.now();
+  let faltan = false;
+  const ids: string[][] = rows.map((row, i) => {
+    const tieneFecha = !!row[0];
+    let id = (row[13] || '').toString().trim();
+    if (tieneFecha && !id) {
+      id = String(base + i);
+      faltan = true;
+    }
+    return [id];
+  });
+
+  if (faltan) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_VENTAS}!N1:N${ids.length + 1}`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [['ID'], ...ids] },
+    });
+  }
+
+  return ids.map((r) => r[0]);
+}
+
 export async function getVentas(): Promise<Venta[]> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
@@ -84,24 +119,27 @@ export async function getVentas(): Promise<Venta[]> {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_VENTAS}!A2:K10000`,
+      range: `${SHEET_VENTAS}!A2:N10000`,
     });
 
     const rows = response.data.values || [];
+    const ids = await ensureVentaIds(sheets, rows);
+
     return rows
-      .filter((row) => row[0])
-      .map((row) => ({
-        id: row[0] || '',
+      .map((row, i) => ({ row, id: ids[i] }))
+      .filter(({ row }) => row[0]) // tiene FECHA
+      .map(({ row, id }) => ({
+        id,
         origen: row[1] || '',
-        fecha: normalizarFecha(row[2] || '', row[0] || ''),
+        fecha: normalizarFecha(row[0] || '', id),
         nombreComercial: row[3] || '',
         cod: row[4] || '',
         cantidad: parsePrecio(row[5]),
-        tipoPrecio: row[6] as 'UNIDAD' | 'EFECTIVO' | 'MAYOR',
+        tipoPrecio: (row[6] || '') as Venta['tipoPrecio'],
         precioUnitario: parsePrecio(row[7]),
         total: parsePrecio(row[8]),
-        costo: parsePrecio(row[9]),
-        ganancia: parsePrecio(row[10]),
+        costo: parsePrecio(row[11]),
+        ganancia: 0, // se recalcula en la API cruzando con el costo del producto
       }));
   } catch {
     return [];
@@ -116,23 +154,28 @@ export async function registrarVenta(venta: Omit<Venta, 'id'>): Promise<void> {
   await ensureVentasSheet(sheets);
 
   const id = Date.now().toString();
+  // Orden real: FECHA, MODALIDAD, COMPROBANTE, ARTICULO, COD, CANTIDAD,
+  //             LISTA DE PRECIO, PRECIO, TOTAL, OBSERVACIONES, (vacía), COSTO, MG BR, ID
   const row = [
-    id,
-    venta.origen,
-    venta.fecha,
-    venta.nombreComercial,
-    venta.cod,
-    venta.cantidad,
-    venta.tipoPrecio,
-    venta.precioUnitario,
-    venta.total,
-    venta.costo,
-    venta.ganancia,
+    venta.fecha,           // A FECHA
+    venta.origen,          // B MODALIDAD
+    '',                    // C COMPROBANTE
+    venta.nombreComercial, // D ARTICULO
+    venta.cod,             // E COD
+    venta.cantidad,        // F CANTIDAD
+    venta.tipoPrecio,      // G LISTA DE PRECIO
+    venta.precioUnitario,  // H PRECIO
+    venta.total,           // I TOTAL
+    '',                    // J OBSERVACIONES
+    '',                    // K
+    venta.costo,           // L COSTO
+    '',                    // M MG BR
+    id,                    // N ID
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!A:K`,
+    range: `${SHEET_VENTAS}!A:N`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -145,7 +188,7 @@ async function buscarFilaVenta(
 ): Promise<number | null> {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!A2:A10000`,
+    range: `${SHEET_VENTAS}!N2:N10000`,
   });
   const ids = response.data.values || [];
   const index = ids.findIndex((r) => (r[0] || '').toString() === id.toString());
@@ -189,25 +232,23 @@ export async function borrarVenta(id: string): Promise<void> {
   });
 }
 
-export async function editarVenta(id: string, cantidad: number, costoReal?: number): Promise<void> {
+export async function editarVenta(id: string, cantidad: number): Promise<void> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
   const fila = await buscarFilaVenta(sheets, id);
   if (!fila) throw new Error('No se encontró la venta');
 
-  // Leer la fila actual para obtener precioUnitario y cod
+  // Leer la fila para obtener el precio unitario (H) y recalcular el total (I)
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!A${fila}:K${fila}`,
+    range: `${SHEET_VENTAS}!A${fila}:N${fila}`,
   });
   const row = response.data.values?.[0] || [];
   const precioUnitario = parsePrecio(row[7]);
-  const costo = costoReal ?? parsePrecio(row[9]);
   const total = precioUnitario * cantidad;
-  const ganancia = (precioUnitario - costo) * cantidad;
 
-  // Actualizar cantidad (F), total (I) y ganancia (K)
+  // Actualizar cantidad (F) y total (I)
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_VENTAS}!F${fila}`,
@@ -219,12 +260,6 @@ export async function editarVenta(id: string, cantidad: number, costoReal?: numb
     range: `${SHEET_VENTAS}!I${fila}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[total]] },
-  });
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!K${fila}`,
-    valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [[ganancia]] },
   });
 }
 
@@ -251,13 +286,13 @@ async function ensureVentasSheet(sheets: ReturnType<typeof google.sheets>) {
       },
     });
 
-    // Agregar encabezados
+    // Agregar encabezados (estructura real + columna ID al final)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_VENTAS}!A1:K1`,
+      range: `${SHEET_VENTAS}!A1:N1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [['ID', 'ORIGEN', 'FECHA', 'NOMBRE COMERCIAL', 'COD', 'CANTIDAD', 'TIPO PRECIO', 'PRECIO UNITARIO', 'TOTAL', 'COSTO', 'GANANCIA']],
+        values: [['FECHA', 'MODALIDAD', 'COMPROBANTE', 'ARTICULO', 'COD', 'CANTIDAD', 'LISTA DE PRECIO', 'PRECIO', 'TOTAL', 'OBSERVACIONES', '', 'COSTO', 'MG BR', 'ID']],
       },
     });
   } catch (error) {

@@ -77,13 +77,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
     }
 
-    // Buscar el costo real del producto para recalcular bien la ganancia
-    const [ventas, productos] = await Promise.all([getVentas(), getProductos()]);
-    const venta = ventas.find((v) => v.id === id);
-    const costoPorCod = new Map(productos.map((p) => [p.cod, p.costo]));
-    const costoReal = venta ? (costoPorCod.get(venta.cod) ?? venta.costo) : undefined;
-
-    await editarVenta(id, cantidad, costoReal);
+    await editarVenta(id, cantidad);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error editando venta:', error);
