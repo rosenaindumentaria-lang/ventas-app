@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getVentas, registrarVenta, borrarVenta, editarVenta, getProductos } from '@/lib/sheets';
+import { getSesion } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
 
+    const sesion = await getSesion();
     const total = precioUnitario * cantidad;
     const ganancia = (precioUnitario - costo) * cantidad;
     const fecha = new Date().toISOString().split('T')[0];
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
       total,
       costo,
       ganancia,
+      usuario: sesion?.usuario || '',
     });
 
     return NextResponse.json({ success: true });

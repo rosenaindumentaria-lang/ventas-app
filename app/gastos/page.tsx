@@ -165,6 +165,7 @@ export default function Gastos() {
                     <p className="text-sm font-medium text-gray-800 truncate">{g.descripcion}</p>
                     <p className="text-xs text-gray-400">
                       {g.fecha.slice(5).replace('-', '/')} · {g.categoria}
+                      {g.usuario && ` · ${g.usuario}`}
                     </p>
                   </div>
                   <span className="text-rose-600 font-semibold text-sm shrink-0">

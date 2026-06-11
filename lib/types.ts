@@ -19,6 +19,7 @@ export interface Gasto {
   descripcion: string;
   categoria: string;
   monto: number;
+  usuario?: string;
 }
 
 export interface Venta {
@@ -34,4 +35,14 @@ export interface Venta {
   total: number;
   costo: number;
   ganancia: number;
+  usuario?: string;
+}
+
+export type RolUsuario = 'admin' | 'vendedor';
+
+export interface Usuario {
+  usuario: string;
+  nombre: string;
+  rol: RolUsuario;
+  activo: boolean;
 }

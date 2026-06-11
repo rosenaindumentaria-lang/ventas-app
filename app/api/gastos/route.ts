@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getGastos, registrarGasto, borrarGasto } from '@/lib/sheets';
+import { getSesion } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -20,8 +21,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
 
+    const sesion = await getSesion();
     const fecha = new Date().toISOString().split('T')[0];
-    await registrarGasto({ fecha, descripcion, categoria: categoria || 'Gasto Adm', monto });
+    await registrarGasto({
+      fecha,
+      descripcion,
+      categoria: categoria || 'Gasto Adm',
+      monto,
+      usuario: sesion?.usuario || '',
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

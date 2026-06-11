@@ -154,6 +154,7 @@ export default function Historial() {
               <tr>
                 <th className="px-4 py-3 text-left">Origen</th>
                 <th className="px-4 py-3 text-left">Fecha</th>
+                <th className="px-4 py-3 text-left">Usuario</th>
                 <th className="px-4 py-3 text-left">Producto</th>
                 <th className="px-4 py-3 text-left">Código</th>
                 <th className="px-4 py-3 text-center">Cant.</th>
@@ -169,6 +170,7 @@ export default function Historial() {
                 <tr key={v.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-500">{v.origen}</td>
                   <td className="px-4 py-3 text-gray-500">{v.fecha}</td>
+                  <td className="px-4 py-3 text-gray-500">{v.usuario || '—'}</td>
                   <td className="px-4 py-3 font-medium text-gray-800">{v.nombreComercial}</td>
                   <td className="px-4 py-3 text-gray-500">{v.cod}</td>
                   <td className="px-4 py-3 text-center">
