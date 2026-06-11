@@ -54,8 +54,8 @@ export default function LoginPage() {
   return (
     <div className="max-w-sm mx-auto mt-12">
       <div className="text-center mb-6">
-        <div className="text-4xl mb-2">📦</div>
-        <h1 className="text-2xl font-bold text-gray-800">Rosena</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Rosena" className="h-16 w-auto mx-auto mb-3" />
         <p className="text-sm text-gray-500 mt-1">
           {esSetup ? 'Creá el primer usuario administrador' : 'Ingresá para continuar'}
         </p>
@@ -105,7 +105,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={enviando}
-          className="w-full rounded-lg bg-indigo-600 text-white py-2 font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="w-full rounded-lg bg-[#6b4423] text-white py-2 font-medium hover:bg-[#553619] disabled:opacity-50 transition-colors"
         >
           {enviando ? 'Procesando…' : esSetup ? 'Crear y entrar' : 'Entrar'}
         </button>

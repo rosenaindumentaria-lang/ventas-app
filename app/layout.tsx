@@ -19,26 +19,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="es">
       <body className={`${geist.className} bg-gray-50 min-h-screen`}>
         {sesion && (
-          <nav className="bg-indigo-700 text-white shadow-md">
+          <nav className="bg-white border-b border-stone-200 shadow-sm">
             <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-6">
-              <span className="font-bold text-lg tracking-tight">📦 Rosena</span>
-              <Link href="/" className="hover:text-indigo-200 transition-colors text-sm font-medium">
+              <Link href="/" className="shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="Rosena" className="h-7 w-auto" />
+              </Link>
+              <Link href="/" className="text-stone-600 hover:text-[#6b4423] transition-colors text-sm font-medium">
                 Registrar Venta
               </Link>
-              <Link href="/historial" className="hover:text-indigo-200 transition-colors text-sm font-medium">
+              <Link href="/historial" className="text-stone-600 hover:text-[#6b4423] transition-colors text-sm font-medium">
                 Historial
               </Link>
-              <Link href="/gastos" className="hover:text-indigo-200 transition-colors text-sm font-medium">
+              <Link href="/gastos" className="text-stone-600 hover:text-[#6b4423] transition-colors text-sm font-medium">
                 Gastos
               </Link>
-              <Link href="/caja" className="hover:text-indigo-200 transition-colors text-sm font-medium">
+              <Link href="/caja" className="text-stone-600 hover:text-[#6b4423] transition-colors text-sm font-medium">
                 Caja
               </Link>
-              <Link href="/reportes" className="hover:text-indigo-200 transition-colors text-sm font-medium">
+              <Link href="/reportes" className="text-stone-600 hover:text-[#6b4423] transition-colors text-sm font-medium">
                 Reportes
               </Link>
               {sesion.rol === 'admin' && (
-                <Link href="/usuarios" className="hover:text-indigo-200 transition-colors text-sm font-medium">
+                <Link href="/usuarios" className="text-stone-600 hover:text-[#6b4423] transition-colors text-sm font-medium">
                   Usuarios
                 </Link>
               )}
