@@ -127,18 +127,18 @@ export default function Historial() {
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow p-3 sm:p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Ventas</p>
-          <p className="text-2xl font-bold text-gray-800">{ventasFiltradas.length}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-800">{ventasFiltradas.length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="bg-white rounded-xl shadow p-3 sm:p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Total vendido</p>
-          <p className="text-2xl font-bold text-indigo-700">{formatPrecio(totalFiltrado)}</p>
+          <p className="text-lg sm:text-2xl font-bold text-indigo-700 break-words">{formatPrecio(totalFiltrado)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 text-center">
+        <div className="bg-white rounded-xl shadow p-3 sm:p-4 text-center">
           <p className="text-xs text-gray-500 mb-1">Ganancia</p>
-          <p className="text-2xl font-bold text-green-600">{formatPrecio(gananciaFiltrada)}</p>
+          <p className="text-lg sm:text-2xl font-bold text-green-600 break-words">{formatPrecio(gananciaFiltrada)}</p>
         </div>
       </div>
 
@@ -148,7 +148,9 @@ export default function Historial() {
       ) : ventasFiltradas.length === 0 ? (
         <p className="text-gray-400 text-center py-12">No hay ventas registradas con esos filtros.</p>
       ) : (
-        <div className="bg-white rounded-xl shadow overflow-x-auto">
+        <>
+        {/* Tabla (escritorio) */}
+        <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
@@ -237,6 +239,92 @@ export default function Historial() {
             </tbody>
           </table>
         </div>
+
+        {/* Tarjetas (mobile) */}
+        <div className="md:hidden space-y-3">
+          {ventasFiltradas.map((v) => (
+            <div key={v.id} className="bg-white rounded-xl shadow p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-800 break-words">{v.nombreComercial}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {v.fecha}
+                    {v.cod && ` · ${v.cod}`}
+                    {v.origen && ` · ${v.origen}`}
+                  </p>
+                </div>
+                <span className="bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium shrink-0">
+                  {v.tipoPrecio}
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400">Cant.</p>
+                  {editandoId === v.id ? (
+                    <input
+                      type="number"
+                      min={1}
+                      value={nuevaCantidad}
+                      onChange={(e) => setNuevaCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 border border-indigo-300 rounded px-2 py-1 text-center"
+                    />
+                  ) : (
+                    <p className="font-medium text-gray-700">
+                      {v.cantidad} <span className="text-gray-400">× {formatPrecio(v.precioUnitario)}</span>
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Total</p>
+                  <p className="font-semibold text-gray-800">{formatPrecio(v.total)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Ganancia</p>
+                  <p className="font-medium text-green-600">{formatPrecio(v.ganancia)}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <span className="text-xs text-gray-400">{v.usuario || '—'}</span>
+                <div className="flex items-center gap-4">
+                  {editandoId === v.id ? (
+                    <>
+                      <button
+                        onClick={() => guardarEdicion(v.id)}
+                        disabled={procesando}
+                        className="text-green-600 font-medium text-sm disabled:opacity-50"
+                      >
+                        Guardar
+                      </button>
+                      <button onClick={() => setEditandoId(null)} className="text-gray-400 text-sm">
+                        Cancelar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => empezarEdicion(v)}
+                        disabled={procesando}
+                        className="text-indigo-600 text-sm disabled:opacity-50"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => borrarVenta(v.id)}
+                        disabled={procesando}
+                        className="text-red-500 text-sm disabled:opacity-50"
+                      >
+                        🗑️ Borrar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );
