@@ -119,7 +119,7 @@ export default function Caja() {
           {/* Saldo acumulado: la caja real */}
           <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl shadow-lg p-6 mb-6 text-white">
             <p className="text-sm text-indigo-200 mb-1">💰 Saldo acumulado en caja</p>
-            <p className="text-4xl font-bold">{formatPrecio(saldoCaja)}</p>
+            <p className="text-3xl sm:text-4xl font-bold break-words">{formatPrecio(saldoCaja)}</p>
             <div className="flex flex-wrap gap-x-8 gap-y-2 mt-4 text-sm">
               <span className="text-indigo-100">
                 Ventas históricas: <strong className="text-white">{formatPrecio(totalVentasHist)}</strong>
@@ -136,14 +136,14 @@ export default function Caja() {
 
           {/* Filtro por mes + totales del período */}
           <div className="bg-white rounded-xl shadow p-5 mb-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <h2 className="text-sm font-semibold text-gray-700">
                 {mes ? `Resumen de ${nombreMes(mes)}` : 'Resumen de todos los meses'}
               </h2>
               <select
                 value={mes}
                 onChange={(e) => setMes(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               >
                 <option value="">Todos los meses</option>
                 {evolucion
@@ -156,18 +156,18 @@ export default function Caja() {
                   ))}
               </select>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Ventas</p>
-                <p className="text-xl font-bold text-indigo-700">{formatPrecio(ventasFiltradasTotal)}</p>
+                <p className="text-base sm:text-xl font-bold text-indigo-700 break-words">{formatPrecio(ventasFiltradasTotal)}</p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Gastos</p>
-                <p className="text-xl font-bold text-rose-600">{formatPrecio(gastosFiltradosTotal)}</p>
+                <p className="text-base sm:text-xl font-bold text-rose-600 break-words">{formatPrecio(gastosFiltradosTotal)}</p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Resultado</p>
-                <p className={`text-xl font-bold ${resultadoFiltrado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-base sm:text-xl font-bold break-words ${resultadoFiltrado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatPrecio(resultadoFiltrado)}
                 </p>
               </div>
@@ -182,7 +182,7 @@ export default function Caja() {
             {evolucion.length === 0 ? (
               <p className="text-gray-400 text-sm text-center py-8">Sin movimientos registrados</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                     <tr>
@@ -218,6 +218,51 @@ export default function Caja() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Evolución como tarjetas en mobile (más reciente primero) */}
+            {evolucion.length > 0 && (
+              <div className="md:hidden divide-y divide-gray-100">
+                {evolucion
+                  .slice()
+                  .reverse()
+                  .map((e) => {
+                    const resultadoMes = e.ventas - e.gastos;
+                    return (
+                      <button
+                        key={e.ym}
+                        onClick={() => setMes(mes === e.ym ? '' : e.ym)}
+                        className={`w-full text-left px-4 py-3 ${mes === e.ym ? 'bg-indigo-50' : ''}`}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <span className="font-medium text-gray-800">{nombreMes(e.ym)}</span>
+                          <span className="text-right">
+                            <span className={`block text-sm font-bold ${e.saldoAcum >= 0 ? 'text-gray-800' : 'text-red-600'}`}>
+                              {formatPrecio(e.saldoAcum)}
+                            </span>
+                            <span className="block text-[10px] text-gray-400">saldo acum.</span>
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="block text-gray-400">Ventas</span>
+                            <span className="font-medium text-indigo-600 break-words">{formatPrecio(e.ventas)}</span>
+                          </div>
+                          <div>
+                            <span className="block text-gray-400">Gastos</span>
+                            <span className="font-medium text-rose-600 break-words">{formatPrecio(e.gastos)}</span>
+                          </div>
+                          <div>
+                            <span className="block text-gray-400">Resultado</span>
+                            <span className={`font-medium break-words ${resultadoMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatPrecio(resultadoMes)}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
               </div>
             )}
           </div>
