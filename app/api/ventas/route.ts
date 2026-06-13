@@ -9,7 +9,7 @@ export async function GET() {
 
     const ventasConGanancia = ventas.map((v) => {
       const prod = porCod.get(v.cod);
-      const costo = prod?.costo ?? v.costo;
+      const costo = v.costo > 0 ? v.costo : (prod?.costo ?? 0);
       const ganancia = (v.precioUnitario - costo) * v.cantidad;
       return { ...v, costo, ganancia, rubro: prod?.rubro || 'Sin rubro' };
     });
