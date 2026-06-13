@@ -19,6 +19,7 @@ export default function RegistrarVenta() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const [mostrarLista, setMostrarLista] = useState(false);
+  const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     fetch('/api/productos')
@@ -78,6 +79,7 @@ export default function RegistrarVenta() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           origen,
+          fecha,
           cod: productoSeleccionado.cod,
           nombreComercial: productoSeleccionado.nombreComercial,
           cantidad,
@@ -96,6 +98,7 @@ export default function RegistrarVenta() {
         setOrigen('');
         setPrecioManual(0);
         setDescuento(0);
+        setFecha(new Date().toISOString().split('T')[0]);
       } else {
         const data = await res.json().catch(() => ({}));
         setMensaje({ tipo: 'error', texto: `❌ ${data.detalle || data.error || 'Error al registrar la venta'}` });
@@ -115,6 +118,17 @@ export default function RegistrarVenta() {
         <p className="text-gray-500">Cargando productos...</p>
       ) : (
         <div className="bg-white rounded-xl shadow p-6 max-w-xl space-y-5">
+          {/* Fecha */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+
           {/* Origen */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Origen</label>

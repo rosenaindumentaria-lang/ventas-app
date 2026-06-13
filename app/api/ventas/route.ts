@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { origen, cod, nombreComercial, cantidad, tipoPrecio, precioUnitario, costo } = body;
+    const { origen, fecha: fechaBody, cod, nombreComercial, cantidad, tipoPrecio, precioUnitario, costo } = body;
 
     if (!cod || !cantidad || !tipoPrecio || !precioUnitario) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const sesion = await getSesion();
     const total = precioUnitario * cantidad;
     const ganancia = (precioUnitario - costo) * cantidad;
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = fechaBody || new Date().toISOString().split('T')[0];
 
     await registrarVenta({
       origen: origen || '',
