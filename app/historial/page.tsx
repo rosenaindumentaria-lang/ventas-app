@@ -14,6 +14,7 @@ export default function Historial() {
   const [nuevaCantidad, setNuevaCantidad] = useState(1);
   const [nuevaFecha, setNuevaFecha] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
 
   function cargarVentas() {
     setLoading(true);
@@ -68,6 +69,7 @@ export default function Historial() {
 
   async function guardarEdicion(id: string) {
     setProcesando(true);
+    setErrorEdicion(null);
     try {
       const res = await fetch('/api/ventas', {
         method: 'PUT',
@@ -76,11 +78,13 @@ export default function Historial() {
       });
       if (res.ok) {
         setEditandoId(null);
-        cargarVentas(); // recargar para ver total y ganancia actualizados
+        cargarVentas();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(`Error al editar: ${data.detalle || data.error || 'desconocido'}`);
+        setErrorEdicion(data.detalle || data.error || 'Error desconocido');
       }
+    } catch {
+      setErrorEdicion('Error de conexión');
     } finally {
       setProcesando(false);
     }
@@ -143,6 +147,12 @@ export default function Historial() {
           <p className="text-lg sm:text-2xl font-bold text-green-600 break-words">{formatPrecio(gananciaFiltrada)}</p>
         </div>
       </div>
+
+      {errorEdicion && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+          ❌ Error al guardar: {errorEdicion}
+        </div>
+      )}
 
       {/* Tabla */}
       {loading ? (
@@ -315,7 +325,7 @@ export default function Historial() {
                         disabled={procesando}
                         className="text-green-600 font-medium text-sm disabled:opacity-50"
                       >
-                        Guardar
+                        {procesando ? 'Guardando...' : 'Guardar'}
                       </button>
                       <button onClick={() => setEditandoId(null)} className="text-gray-400 text-sm">
                         Cancelar

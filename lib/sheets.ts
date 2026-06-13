@@ -122,6 +122,7 @@ export async function getVentas(): Promise<Venta[]> {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_VENTAS}!A2:O10000`,
+      valueRenderOption: 'FORMATTED_VALUE',
     });
 
     const rows = response.data.values || [];
@@ -256,7 +257,7 @@ export async function editarVenta(id: string, cantidad: number, fecha?: string):
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_VENTAS}!A${fila}`,
-      valueInputOption: 'USER_ENTERED',
+      valueInputOption: 'RAW',
       requestBody: { values: [[fecha]] },
     });
   }
