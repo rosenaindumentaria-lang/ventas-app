@@ -236,7 +236,7 @@ export async function borrarVenta(id: string): Promise<void> {
   });
 }
 
-export async function editarVenta(id: string, cantidad: number): Promise<void> {
+export async function editarVenta(id: string, cantidad: number, fecha?: string): Promise<void> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
@@ -252,7 +252,14 @@ export async function editarVenta(id: string, cantidad: number): Promise<void> {
   const precioUnitario = parsePrecio(row[7]);
   const total = precioUnitario * cantidad;
 
-  // Actualizar cantidad (F) y total (I)
+  if (fecha) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_VENTAS}!A${fila}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[fecha]] },
+    });
+  }
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_VENTAS}!F${fila}`,

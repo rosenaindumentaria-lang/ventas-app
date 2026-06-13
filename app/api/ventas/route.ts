@@ -75,12 +75,12 @@ export async function DELETE(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, cantidad } = body;
+    const { id, cantidad, fecha } = body;
     if (!id || !cantidad || cantidad < 1) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
     }
 
-    await editarVenta(id, cantidad);
+    await editarVenta(id, cantidad, fecha);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error editando venta:', error);
