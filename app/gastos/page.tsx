@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Gasto } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 
-const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero'];
+const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero', 'Pago Mercadería'];
 
 export default function Gastos() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -16,6 +16,7 @@ export default function Gastos() {
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('Gasto Adm');
   const [monto, setMonto] = useState('');
+  const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
 
   function cargarGastos() {
     setLoading(true);
@@ -40,7 +41,7 @@ export default function Gastos() {
       const res = await fetch('/api/gastos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ descripcion, categoria, monto: parseFloat(monto) }),
+        body: JSON.stringify({ descripcion, categoria, monto: parseFloat(monto), fecha }),
       });
 
       if (res.ok) {
@@ -48,6 +49,7 @@ export default function Gastos() {
         setDescripcion('');
         setMonto('');
         setCategoria('Gasto Adm');
+        setFecha(new Date().toISOString().split('T')[0]);
         cargarGastos();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -84,6 +86,16 @@ export default function Gastos() {
         {/* Formulario */}
         <div className="bg-white rounded-xl shadow p-6 space-y-4 h-fit">
           <h2 className="text-sm font-semibold text-gray-700">Registrar gasto</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>

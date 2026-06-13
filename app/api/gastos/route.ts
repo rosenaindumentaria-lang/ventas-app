@@ -15,14 +15,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { descripcion, categoria, monto } = body;
+    const { descripcion, categoria, monto, fecha: fechaBody } = body;
 
     if (!descripcion || !monto || monto <= 0) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
 
     const sesion = await getSesion();
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = fechaBody || new Date().toISOString().split('T')[0];
     await registrarGasto({
       fecha,
       descripcion,
