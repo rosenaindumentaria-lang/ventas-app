@@ -7,8 +7,13 @@ import NavBar from './components/NavBar';
 const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Ventas App',
-  description: 'Gestión de ventas de tu emprendimiento',
+  title: 'Rosena Ventas',
+  description: 'Gestión de ventas de Rosena Indumentaria',
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

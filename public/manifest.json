@@ -1,0 +1,21 @@
+{
+  "name": "Rosena Ventas",
+  "short_name": "Rosena",
+  "description": "Gestión de ventas de Rosena Indumentaria",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
