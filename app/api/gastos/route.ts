@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getGastos, registrarGasto, borrarGasto } from '@/lib/sheets';
+import { getGastos, registrarGasto, borrarGasto, editarGasto } from '@/lib/sheets';
 import { getSesion } from '@/lib/auth';
 
 export async function GET() {
@@ -36,6 +36,23 @@ export async function POST(request: Request) {
     console.error('Error registrando gasto:', error);
     const detalle = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: 'Error al registrar gasto', detalle }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, fecha, descripcion, categoria, monto } = body;
+
+    if (!id || !descripcion || !monto || monto <= 0) {
+      return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
+    }
+
+    await editarGasto(id, { fecha, descripcion, categoria, monto });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const detalle = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: 'Error al editar gasto', detalle }, { status: 500 });
   }
 }
 

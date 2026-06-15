@@ -360,7 +360,7 @@ export async function registrarGasto(gasto: Omit<Gasto, 'id'>): Promise<void> {
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_GASTOS}!A:E`,
-    valueInputOption: 'USER_ENTERED',
+    valueInputOption: 'RAW',
     requestBody: { values: [row] },
   });
 }
@@ -389,6 +389,25 @@ export async function borrarGasto(id: string): Promise<void> {
         },
       ],
     },
+  });
+}
+
+export async function editarGasto(
+  id: string,
+  campos: { fecha: string; descripcion: string; categoria: string; monto: number }
+): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = parseInt(id, 10);
+  if (!fila || fila < 2) throw new Error('Gasto inválido');
+
+  // Columnas: A=FECHA, B=CUENTA, C=OBSERVACION, D=IMPORTE
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_GASTOS}!A${fila}:D${fila}`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[campos.fecha, campos.categoria, campos.descripcion, campos.monto]] },
   });
 }
 
