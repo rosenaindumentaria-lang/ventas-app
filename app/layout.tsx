@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   description: 'Gestión de ventas de Rosena Indumentaria',
   manifest: '/manifest.json',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/rosena.jpeg',
+    apple: '/rosena.jpeg',
   },
 };
 
