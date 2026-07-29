@@ -9,7 +9,7 @@ export async function GET() {
 
     const ventasConGanancia = ventas.map((v) => {
       const prod = porCod.get(v.cod);
-      const costo = prod?.costo ?? v.costo;
+      const costo = v.costo > 0 ? v.costo : (prod?.costo ?? 0);
       const ganancia = (v.precioUnitario - costo) * v.cantidad;
       return { ...v, costo, ganancia, rubro: prod?.rubro || 'Sin rubro' };
     });
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { origen, cod, nombreComercial, cantidad, tipoPrecio, precioUnitario, costo } = body;
+    const { origen, fecha: fechaBody, cod, nombreComercial, cantidad, tipoPrecio, precioUnitario, costo } = body;
 
     if (!cod || !cantidad || !tipoPrecio || !precioUnitario) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const sesion = await getSesion();
     const total = precioUnitario * cantidad;
     const ganancia = (precioUnitario - costo) * cantidad;
-    const fecha = new Date().toISOString().split('T')[0];
+    const fecha = fechaBody || new Date().toISOString().split('T')[0];
 
     await registrarVenta({
       origen: origen || '',
@@ -75,12 +75,12 @@ export async function DELETE(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, cantidad } = body;
+    const { id, cantidad, fecha } = body;
     if (!id || !cantidad || cantidad < 1) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 });
     }
 
-    await editarVenta(id, cantidad);
+    await editarVenta(id, cantidad, fecha);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error editando venta:', error);

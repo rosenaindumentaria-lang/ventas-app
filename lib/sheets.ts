@@ -131,6 +131,7 @@ export async function getVentas(): Promise<Venta[]> {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_VENTAS}!A2:O10000`,
+      valueRenderOption: 'FORMATTED_VALUE',
     });
 
     const rows = response.data.values || [];
@@ -245,7 +246,7 @@ export async function borrarVenta(id: string): Promise<void> {
   });
 }
 
-export async function editarVenta(id: string, cantidad: number): Promise<void> {
+export async function editarVenta(id: string, cantidad: number, fecha?: string): Promise<void> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
@@ -261,7 +262,14 @@ export async function editarVenta(id: string, cantidad: number): Promise<void> {
   const precioUnitario = parsePrecio(row[7]);
   const total = precioUnitario * cantidad;
 
-  // Actualizar cantidad (F) y total (I)
+  if (fecha) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_VENTAS}!A${fila}`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [[fecha]] },
+    });
+  }
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_VENTAS}!F${fila}`,
@@ -371,7 +379,9 @@ export async function registrarGasto(gasto: Omit<Gasto, 'id'>): Promise<void> {
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_GASTOS}!A${proxima}:E${proxima}`,
-    valueInputOption: 'USER_ENTERED',
+    // RAW y no USER_ENTERED: así Sheets no reinterpreta la fecha "YYYY-MM-DD"
+    // como fecha propia y la reescribe en otro formato.
+    valueInputOption: 'RAW',
     requestBody: { values: [row] },
   });
 }
@@ -471,6 +481,25 @@ export async function borrarGasto(id: string): Promise<void> {
   });
 }
 
+export async function editarGasto(
+  id: string,
+  campos: { fecha: string; descripcion: string; categoria: string; monto: number }
+): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = parseInt(id, 10);
+  if (!fila || fila < 2) throw new Error('Gasto inválido');
+
+  // Columnas: A=FECHA, B=CUENTA, C=OBSERVACION, D=IMPORTE
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_GASTOS}!A${fila}:D${fila}`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[campos.fecha, campos.categoria, campos.descripcion, campos.monto]] },
+  });
+}
+
 async function ensureGastosSheet(sheets: ReturnType<typeof google.sheets>) {
   const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
   const hojas = (spreadsheet.data.sheets || []).map((s) =>
@@ -547,7 +576,8 @@ export async function registrarMovimiento(mov: Omit<MovimientoCaja, 'id'>): Prom
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_MOVIMIENTOS}!A${proxima}:E${proxima}`,
-    valueInputOption: 'USER_ENTERED',
+    // RAW por lo mismo que en registrarGasto: que Sheets no toque la fecha.
+    valueInputOption: 'RAW',
     requestBody: { values: [row] },
   });
 }

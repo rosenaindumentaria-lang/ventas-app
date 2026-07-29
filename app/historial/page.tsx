@@ -12,7 +12,9 @@ export default function Historial() {
   const [busqueda, setBusqueda] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nuevaCantidad, setNuevaCantidad] = useState(1);
+  const [nuevaFecha, setNuevaFecha] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
 
   function cargarVentas() {
     setLoading(true);
@@ -62,23 +64,27 @@ export default function Historial() {
   function empezarEdicion(v: Venta) {
     setEditandoId(v.id);
     setNuevaCantidad(v.cantidad);
+    setNuevaFecha(v.fecha);
   }
 
   async function guardarEdicion(id: string) {
     setProcesando(true);
+    setErrorEdicion(null);
     try {
       const res = await fetch('/api/ventas', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, cantidad: nuevaCantidad }),
+        body: JSON.stringify({ id, cantidad: nuevaCantidad, fecha: nuevaFecha }),
       });
       if (res.ok) {
         setEditandoId(null);
-        cargarVentas(); // recargar para ver total y ganancia actualizados
+        cargarVentas();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(`Error al editar: ${data.detalle || data.error || 'desconocido'}`);
+        setErrorEdicion(data.detalle || data.error || 'Error desconocido');
       }
+    } catch {
+      setErrorEdicion('Error de conexión');
     } finally {
       setProcesando(false);
     }
@@ -142,6 +148,12 @@ export default function Historial() {
         </div>
       </div>
 
+      {errorEdicion && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+          ❌ Error al guardar: {errorEdicion}
+        </div>
+      )}
+
       {/* Tabla */}
       {loading ? (
         <p className="text-gray-500">Cargando ventas...</p>
@@ -171,7 +183,18 @@ export default function Historial() {
               {ventasFiltradas.map((v) => (
                 <tr key={v.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-500">{v.origen}</td>
-                  <td className="px-4 py-3 text-gray-500">{v.fecha}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {editandoId === v.id ? (
+                      <input
+                        type="date"
+                        value={nuevaFecha}
+                        onChange={(e) => setNuevaFecha(e.target.value)}
+                        className="border border-indigo-300 rounded px-2 py-1 text-sm"
+                      />
+                    ) : (
+                      v.fecha
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{v.usuario || '—'}</td>
                   <td className="px-4 py-3 font-medium text-gray-800">{v.nombreComercial}</td>
                   <td className="px-4 py-3 text-gray-500">{v.cod}</td>
@@ -247,11 +270,18 @@ export default function Historial() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-gray-800 break-words">{v.nombreComercial}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {v.fecha}
-                    {v.cod && ` · ${v.cod}`}
-                    {v.origen && ` · ${v.origen}`}
-                  </p>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {editandoId === v.id ? (
+                      <input
+                        type="date"
+                        value={nuevaFecha}
+                        onChange={(e) => setNuevaFecha(e.target.value)}
+                        className="border border-indigo-300 rounded px-2 py-1 text-sm text-gray-700"
+                      />
+                    ) : (
+                      <span>{v.fecha}{v.cod && ` · ${v.cod}`}{v.origen && ` · ${v.origen}`}</span>
+                    )}
+                  </div>
                 </div>
                 <span className="bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium shrink-0">
                   {v.tipoPrecio}
@@ -295,7 +325,7 @@ export default function Historial() {
                         disabled={procesando}
                         className="text-green-600 font-medium text-sm disabled:opacity-50"
                       >
-                        Guardar
+                        {procesando ? 'Guardando...' : 'Guardar'}
                       </button>
                       <button onClick={() => setEditandoId(null)} className="text-gray-400 text-sm">
                         Cancelar

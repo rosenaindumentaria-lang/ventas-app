@@ -5,29 +5,35 @@ import { Gasto, GastoPendiente } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 import { EVENTO_PENDIENTES } from '@/app/components/NavBar';
 
-const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero'];
+const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero', 'Pago Mercadería'];
 
 export default function Gastos() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [pendientes, setPendientes] = useState<GastoPendiente[]>([]);
-  const [pendienteId, setPendienteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
+  // Formulario (nuevo o edición)
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [descripcion, setDescripcion] = useState('');
   const [categoria, setCategoria] = useState('Gasto Adm');
   const [monto, setMonto] = useState('');
+  const [fecha, setFecha] = useState(() => new Date().toISOString().split('T')[0]);
 
   function cargarGastos() {
     setLoading(true);
+    setErrorCarga(null);
     fetch('/api/gastos')
       .then((r) => r.json())
       .then((data) => {
+        if (!Array.isArray(data)) throw new Error(data.error || 'Respuesta inválida');
         setGastos(data.reverse());
-        setLoading(false);
-      });
+      })
+      .catch((e) => setErrorCarga(e.message))
+      .finally(() => setLoading(false));
   }
 
   function cargarPendientes() {
@@ -47,10 +53,33 @@ export default function Gastos() {
     cargarPendientes();
   }, []);
 
-  // Cargar un pendiente en el formulario para terminar de registrarlo.
+  function empezarEdicion(g: Gasto) {
+    setEditandoId(g.id);
+    setDescripcion(g.descripcion);
+    setCategoria(g.categoria || 'Gasto Adm');
+    setMonto(String(g.monto));
+    setFecha(g.fecha);
+    setMensaje(null);
+  }
+
+  function cancelarEdicion() {
+    setEditandoId(null);
+    setDescripcion('');
+    setCategoria('Gasto Adm');
+    setMonto('');
+    setFecha(new Date().toISOString().split('T')[0]);
+    setMensaje(null);
+  }
+
+  // Cargar un pendiente en el formulario para terminar de registrarlo. Se edita
+  // la fila que ya existe en vez de crear una nueva y borrar la vieja: una sola
+  // escritura, y no hay riesgo de que se corran las filas en el medio.
   function completarPendiente(p: GastoPendiente) {
-    setPendienteId(p.id);
+    setEditandoId(p.id);
+    setDescripcion('');
+    setCategoria('Gasto Adm');
     setMonto(String(p.monto));
+    setFecha(new Date().toISOString().split('T')[0]);
     setMensaje(null);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -62,7 +91,7 @@ export default function Gastos() {
       const res = await fetch(`/api/gastos?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         setPendientes((prev) => prev.filter((p) => p.id !== id));
-        if (pendienteId === id) setPendienteId(null);
+        if (editandoId === id) cancelarEdicion();
         avisarNav();
       } else alert('Error al descartar');
     } finally {
@@ -70,30 +99,35 @@ export default function Gastos() {
     }
   }
 
-  async function registrar() {
+  // La fila que estamos editando sigue siendo un pendiente mientras no tenga fecha.
+  const completandoPendiente =
+    editandoId !== null && pendientes.some((p) => p.id === editandoId);
+
+  async function guardar() {
     if (!descripcion.trim() || !monto) return;
     setGuardando(true);
     setMensaje(null);
 
+    const esEdicion = editandoId !== null;
+    const url = '/api/gastos';
+    const method = esEdicion ? 'PUT' : 'POST';
+    const body = esEdicion
+      ? { id: editandoId, fecha, descripcion, categoria, monto: parseFloat(monto) }
+      : { fecha, descripcion, categoria, monto: parseFloat(monto) };
+
     try {
-      const res = await fetch('/api/gastos', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ descripcion, categoria, monto: parseFloat(monto) }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
-        setMensaje({ tipo: 'ok', texto: '✅ Gasto registrado' });
-        setDescripcion('');
-        setMonto('');
-        setCategoria('Gasto Adm');
-        // Si veníamos completando un pendiente, borramos la fila huérfana.
-        if (pendienteId) {
-          await fetch(`/api/gastos?id=${pendienteId}`, { method: 'DELETE' }).catch(() => {});
-          setPendienteId(null);
-          cargarPendientes();
-          avisarNav();
-        }
+        setMensaje({ tipo: 'ok', texto: esEdicion ? '✅ Gasto actualizado' : '✅ Gasto registrado' });
+        cancelarEdicion();
+        // Si lo que se guardó era un pendiente, ya tiene fecha y deja de serlo.
+        cargarPendientes();
+        avisarNav();
         cargarGastos();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -111,8 +145,12 @@ export default function Gastos() {
     setProcesando(true);
     try {
       const res = await fetch(`/api/gastos?id=${id}`, { method: 'DELETE' });
-      if (res.ok) setGastos((prev) => prev.filter((g) => g.id !== id));
-      else alert('Error al borrar');
+      if (res.ok) {
+        setGastos((prev) => prev.filter((g) => g.id !== id));
+        if (editandoId === id) cancelarEdicion();
+      } else {
+        alert('Error al borrar');
+      }
     } finally {
       setProcesando(false);
     }
@@ -170,19 +208,38 @@ export default function Gastos() {
         {/* Formulario */}
         <div className="bg-white rounded-xl shadow p-6 space-y-4 h-fit">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">Registrar gasto</h2>
-            {pendienteId && (
+            <h2 className="text-sm font-semibold text-gray-700">
+              {completandoPendiente
+                ? 'Completar gasto pendiente'
+                : editandoId
+                  ? 'Editar gasto'
+                  : 'Registrar gasto'}
+            </h2>
+            {editandoId && (
               <button
                 type="button"
-                onClick={() => {
-                  setPendienteId(null);
-                  setMonto('');
-                }}
+                onClick={cancelarEdicion}
                 className="text-xs text-amber-600 hover:underline"
               >
-                Completando pendiente · cancelar
+                Cancelar
               </button>
             )}
+          </div>
+
+          {completandoPendiente && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Poné la fecha y el detalle que le faltaban. El importe ya estaba cargado.
+            </p>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
           </div>
 
           <div>
@@ -228,13 +285,23 @@ export default function Gastos() {
             />
           </div>
 
-          <button
-            onClick={registrar}
-            disabled={!descripcion.trim() || !monto || guardando}
-            className="w-full bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
-          >
-            {guardando ? 'Guardando...' : 'Registrar Gasto'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={guardar}
+              disabled={!descripcion.trim() || !monto || guardando}
+              className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              {guardando ? 'Guardando...' : editandoId ? 'Guardar cambios' : 'Registrar Gasto'}
+            </button>
+            {editandoId && (
+              <button
+                onClick={cancelarEdicion}
+                className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 text-sm"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
 
           {mensaje && (
             <p className={`text-sm text-center font-medium ${mensaje.tipo === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
@@ -255,12 +322,24 @@ export default function Gastos() {
           </div>
           {loading ? (
             <p className="text-gray-400 text-sm text-center py-8">Cargando...</p>
+          ) : errorCarga ? (
+            <div className="px-5 py-8 text-center">
+              <p className="text-red-500 text-sm mb-3">Error al cargar: {errorCarga}</p>
+              <button onClick={cargarGastos} className="text-indigo-600 text-sm hover:underline">
+                Reintentar
+              </button>
+            </div>
           ) : gastos.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-8">No hay gastos registrados</p>
           ) : (
             <ul className="divide-y divide-gray-100 max-h-[520px] overflow-y-auto">
               {gastos.map((g) => (
-                <li key={g.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                <li
+                  key={g.id}
+                  className={`px-5 py-3 flex items-center justify-between gap-3 ${
+                    editandoId === g.id ? 'bg-rose-50' : ''
+                  }`}
+                >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{g.descripcion}</p>
                     <p className="text-xs text-gray-400">
@@ -271,6 +350,14 @@ export default function Gastos() {
                   <span className="text-rose-600 font-semibold text-sm shrink-0">
                     {formatPrecio(g.monto)}
                   </span>
+                  <button
+                    onClick={() => empezarEdicion(g)}
+                    disabled={procesando}
+                    className="text-gray-300 hover:text-indigo-500 transition-colors disabled:opacity-50 shrink-0"
+                    title="Editar"
+                  >
+                    ✏️
+                  </button>
                   <button
                     onClick={() => borrar(g.id)}
                     disabled={procesando}
