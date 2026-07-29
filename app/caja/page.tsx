@@ -1,12 +1,24 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Venta, Gasto } from '@/lib/types';
+import { Venta, Gasto, MovimientoCaja } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 
-type Movimiento =
-  | { tipo: 'venta'; fecha: string; descripcion: string; monto: number; detalle: string }
-  | { tipo: 'gasto'; fecha: string; descripcion: string; monto: number; detalle: string };
+type Linea = {
+  tipo: 'venta' | 'gasto' | 'entrada' | 'salida';
+  fecha: string;
+  descripcion: string;
+  monto: number;
+  detalle: string;
+};
+
+// Color y signo de cada tipo de línea en el timeline de movimientos.
+const ESTILO_LINEA: Record<Linea['tipo'], { punto: string; texto: string; signo: string }> = {
+  venta: { punto: 'bg-indigo-400', texto: 'text-indigo-600', signo: '+' },
+  entrada: { punto: 'bg-emerald-400', texto: 'text-emerald-600', signo: '+' },
+  salida: { punto: 'bg-amber-400', texto: 'text-amber-600', signo: '−' },
+  gasto: { punto: 'bg-rose-400', texto: 'text-rose-600', signo: '−' },
+};
 
 const NOMBRES_MES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -21,6 +33,7 @@ function nombreMes(ym: string): string {
 export default function Caja() {
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [movs, setMovs] = useState<MovimientoCaja[]>([]);
   const [loading, setLoading] = useState(true);
   const [mes, setMes] = useState(''); // '' = sin filtro (detalle muestra todo)
 
@@ -28,9 +41,11 @@ export default function Caja() {
     Promise.all([
       fetch('/api/ventas').then((r) => r.json()),
       fetch('/api/gastos').then((r) => r.json()),
-    ]).then(([v, g]) => {
+      fetch('/api/movimientos').then((r) => r.json()),
+    ]).then(([v, g, m]) => {
       setVentas(v);
       setGastos(g);
+      setMovs(Array.isArray(m) ? m : []);
       setLoading(false);
     });
   }, []);
@@ -39,34 +54,47 @@ export default function Caja() {
   const totalVentasHist = ventas.reduce((a, v) => a + v.total, 0);
   const totalGananciaHist = ventas.reduce((a, v) => a + v.ganancia, 0);
   const totalGastosHist = gastos.reduce((a, g) => a + g.monto, 0);
-  const saldoCaja = totalVentasHist - totalGastosHist;
+  // Los movimientos ya vienen con signo: entradas en positivo, salidas en
+  // negativo. Sumarlos da el neto que aportaron a la caja.
+  const netoMovsHist = movs.reduce((a, m) => a + m.monto, 0);
+  const saldoCaja = totalVentasHist + netoMovsHist - totalGastosHist;
+  // Los movimientos NO tocan el resultado neto: un préstamo no es ganancia y
+  // devolver su capital no es un gasto (cancelás una deuda, no consumís nada).
+  // Sólo los intereses son un costo real, y ésos se cargan en Gastos.
   const resultadoNetoHist = totalGananciaHist - totalGastosHist;
 
   // ── Evolución mes a mes, con saldo acumulado corriendo ──
   const evolucion = useMemo(() => {
-    const mapa: Record<string, { ventas: number; ganancia: number; gastos: number }> = {};
+    const mapa: Record<string, { ventas: number; ganancia: number; gastos: number; movs: number }> = {};
+    const nuevoMes = () => ({ ventas: 0, ganancia: 0, gastos: 0, movs: 0 });
     for (const v of ventas) {
       const ym = v.fecha.slice(0, 7);
       if (!/^\d{4}-\d{2}$/.test(ym)) continue;
-      if (!mapa[ym]) mapa[ym] = { ventas: 0, ganancia: 0, gastos: 0 };
+      if (!mapa[ym]) mapa[ym] = nuevoMes();
       mapa[ym].ventas += v.total;
       mapa[ym].ganancia += v.ganancia;
     }
     for (const g of gastos) {
       const ym = g.fecha.slice(0, 7);
       if (!/^\d{4}-\d{2}$/.test(ym)) continue;
-      if (!mapa[ym]) mapa[ym] = { ventas: 0, ganancia: 0, gastos: 0 };
+      if (!mapa[ym]) mapa[ym] = nuevoMes();
       mapa[ym].gastos += g.monto;
+    }
+    for (const m of movs) {
+      const ym = m.fecha.slice(0, 7);
+      if (!/^\d{4}-\d{2}$/.test(ym)) continue;
+      if (!mapa[ym]) mapa[ym] = nuevoMes();
+      mapa[ym].movs += m.monto;
     }
     let acum = 0;
     return Object.keys(mapa)
       .sort()
       .map((ym) => {
         const d = mapa[ym];
-        acum += d.ventas - d.gastos;
+        acum += d.ventas + d.movs - d.gastos;
         return { ym, ...d, saldoAcum: acum };
       });
-  }, [ventas, gastos]);
+  }, [ventas, gastos, movs]);
 
   // ── Detalle filtrado (por mes seleccionado, o todo) ──
   const ventasFiltradas = useMemo(
@@ -77,10 +105,19 @@ export default function Caja() {
     () => (mes ? gastos.filter((g) => g.fecha.startsWith(mes)) : gastos),
     [gastos, mes]
   );
+  const movsFiltrados = useMemo(
+    () => (mes ? movs.filter((m) => m.fecha.startsWith(mes)) : movs),
+    [movs, mes]
+  );
 
   const ventasFiltradasTotal = ventasFiltradas.reduce((a, v) => a + v.total, 0);
   const gastosFiltradosTotal = gastosFiltrados.reduce((a, g) => a + g.monto, 0);
-  const resultadoFiltrado = ventasFiltradasTotal - gastosFiltradosTotal;
+  const movsFiltradosTotal = movsFiltrados.reduce((a, m) => a + m.monto, 0);
+  const resultadoFiltrado = ventasFiltradasTotal + movsFiltradosTotal - gastosFiltradosTotal;
+  // Si nunca se cargó un movimiento, la caja se ve igual que antes: sin columnas
+  // de más. Se mira la cantidad y no el neto, porque el neto puede dar 0 (un
+  // préstamo ya devuelto del todo) y las filas igual existen.
+  const hayMovs = movs.length > 0;
 
   const gastosPorCategoria = useMemo(() => {
     const mapa: Record<string, number> = {};
@@ -90,23 +127,30 @@ export default function Caja() {
     return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
   }, [gastosFiltrados]);
 
-  const movimientos: Movimiento[] = useMemo(() => {
-    const v: Movimiento[] = ventasFiltradas.map((v) => ({
+  const lineas: Linea[] = useMemo(() => {
+    const v: Linea[] = ventasFiltradas.map((v) => ({
       tipo: 'venta',
       fecha: v.fecha,
       descripcion: v.nombreComercial,
       monto: v.total,
       detalle: `${v.cantidad} u · ${v.tipoPrecio} · ${v.origen || '—'}`,
     }));
-    const g: Movimiento[] = gastosFiltrados.map((g) => ({
+    const g: Linea[] = gastosFiltrados.map((g) => ({
       tipo: 'gasto',
       fecha: g.fecha,
       descripcion: g.descripcion,
       monto: g.monto,
       detalle: g.categoria,
     }));
-    return [...v, ...g].sort((a, b) => b.fecha.localeCompare(a.fecha));
-  }, [ventasFiltradas, gastosFiltrados]);
+    const m: Linea[] = movsFiltrados.map((m) => ({
+      tipo: m.monto >= 0 ? 'entrada' : 'salida',
+      fecha: m.fecha,
+      descripcion: m.detalle,
+      monto: Math.abs(m.monto),
+      detalle: m.tipo,
+    }));
+    return [...v, ...g, ...m].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }, [ventasFiltradas, gastosFiltrados, movsFiltrados]);
 
   return (
     <div>
@@ -124,6 +168,11 @@ export default function Caja() {
               <span className="text-indigo-100">
                 Ventas históricas: <strong className="text-white">{formatPrecio(totalVentasHist)}</strong>
               </span>
+              {hayMovs && (
+                <span className="text-indigo-100">
+                  Otros movimientos: <strong className="text-white">{formatPrecio(netoMovsHist)}</strong>
+                </span>
+              )}
               <span className="text-indigo-100">
                 Gastos históricos: <strong className="text-white">{formatPrecio(totalGastosHist)}</strong>
               </span>
@@ -156,11 +205,19 @@ export default function Caja() {
                   ))}
               </select>
             </div>
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className={`grid gap-2 sm:gap-4 ${hayMovs ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
               <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Ventas</p>
                 <p className="text-base sm:text-xl font-bold text-indigo-700 break-words">{formatPrecio(ventasFiltradasTotal)}</p>
               </div>
+              {hayMovs && (
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-1">Otros movimientos</p>
+                  <p className={`text-base sm:text-xl font-bold break-words ${movsFiltradosTotal >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {formatPrecio(movsFiltradosTotal)}
+                  </p>
+                </div>
+              )}
               <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Gastos</p>
                 <p className="text-base sm:text-xl font-bold text-rose-600 break-words">{formatPrecio(gastosFiltradosTotal)}</p>
@@ -188,6 +245,7 @@ export default function Caja() {
                     <tr>
                       <th className="px-5 py-3 text-left">Mes</th>
                       <th className="px-5 py-3 text-right">Ventas</th>
+                      {hayMovs && <th className="px-5 py-3 text-right">Otros movim.</th>}
                       <th className="px-5 py-3 text-right">Gastos</th>
                       <th className="px-5 py-3 text-right">Resultado mes</th>
                       <th className="px-5 py-3 text-right">Saldo acumulado</th>
@@ -195,7 +253,7 @@ export default function Caja() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {evolucion.map((e) => {
-                      const resultadoMes = e.ventas - e.gastos;
+                      const resultadoMes = e.ventas + e.movs - e.gastos;
                       return (
                         <tr
                           key={e.ym}
@@ -206,6 +264,11 @@ export default function Caja() {
                         >
                           <td className="px-5 py-3 font-medium text-gray-800">{nombreMes(e.ym)}</td>
                           <td className="px-5 py-3 text-right text-indigo-600">{formatPrecio(e.ventas)}</td>
+                          {hayMovs && (
+                            <td className={`px-5 py-3 text-right ${e.movs >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              {e.movs === 0 ? '—' : formatPrecio(e.movs)}
+                            </td>
+                          )}
                           <td className="px-5 py-3 text-right text-rose-600">{formatPrecio(e.gastos)}</td>
                           <td className={`px-5 py-3 text-right font-medium ${resultadoMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatPrecio(resultadoMes)}
@@ -228,7 +291,7 @@ export default function Caja() {
                   .slice()
                   .reverse()
                   .map((e) => {
-                    const resultadoMes = e.ventas - e.gastos;
+                    const resultadoMes = e.ventas + e.movs - e.gastos;
                     return (
                       <button
                         key={e.ym}
@@ -244,11 +307,19 @@ export default function Caja() {
                             <span className="block text-[10px] text-gray-400">saldo acum.</span>
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className={`grid gap-2 text-xs ${e.movs !== 0 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                           <div>
                             <span className="block text-gray-400">Ventas</span>
                             <span className="font-medium text-indigo-600 break-words">{formatPrecio(e.ventas)}</span>
                           </div>
+                          {e.movs !== 0 && (
+                            <div>
+                              <span className="block text-gray-400">Otros movim.</span>
+                              <span className={`font-medium break-words ${e.movs > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                {formatPrecio(e.movs)}
+                              </span>
+                            </div>
+                          )}
                           <div>
                             <span className="block text-gray-400">Gastos</span>
                             <span className="font-medium text-rose-600 break-words">{formatPrecio(e.gastos)}</span>
@@ -313,34 +384,36 @@ export default function Caja() {
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" /> Venta
                   </span>
+                  {hayMovs && (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Entrada
+                    </span>
+                  )}
+                  {hayMovs && (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Salida
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" /> Gasto
                   </span>
                 </div>
               </div>
-              {movimientos.length === 0 ? (
+              {lineas.length === 0 ? (
                 <p className="text-gray-400 text-sm text-center py-8">Sin movimientos</p>
               ) : (
                 <ul className="divide-y divide-gray-50 max-h-[480px] overflow-y-auto">
-                  {movimientos.map((m, i) => (
+                  {lineas.map((l, i) => (
                     <li key={i} className="px-5 py-3 flex items-center gap-3">
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          m.tipo === 'venta' ? 'bg-indigo-400' : 'bg-rose-400'
-                        }`}
-                      />
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${ESTILO_LINEA[l.tipo].punto}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{m.descripcion}</p>
+                        <p className="text-sm font-medium text-gray-800 truncate">{l.descripcion}</p>
                         <p className="text-xs text-gray-400">
-                          {m.fecha.slice(5).replace('-', '/')} · {m.detalle}
+                          {l.fecha.slice(5).replace('-', '/')} · {l.detalle}
                         </p>
                       </div>
-                      <span
-                        className={`text-sm font-semibold shrink-0 ${
-                          m.tipo === 'venta' ? 'text-indigo-600' : 'text-rose-600'
-                        }`}
-                      >
-                        {m.tipo === 'venta' ? '+' : '−'} {formatPrecio(m.monto)}
+                      <span className={`text-sm font-semibold shrink-0 ${ESTILO_LINEA[l.tipo].texto}`}>
+                        {ESTILO_LINEA[l.tipo].signo} {formatPrecio(l.monto)}
                       </span>
                     </li>
                   ))}

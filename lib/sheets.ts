@@ -1,12 +1,21 @@
 import { google } from 'googleapis';
-import type { Producto, Venta, Gasto, Usuario, RolUsuario } from './types';
+import type {
+  Producto,
+  Venta,
+  Gasto,
+  GastoPendiente,
+  MovimientoCaja,
+  Usuario,
+  RolUsuario,
+} from './types';
 
-export type { Producto, Venta, Gasto, Usuario, RolUsuario };
+export type { Producto, Venta, Gasto, GastoPendiente, MovimientoCaja, Usuario, RolUsuario };
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 const SHEET_PRODUCTOS = 'BASE DE DATOS';
 const SHEET_VENTAS = 'Ventas';
 const SHEET_GASTOS = 'Gastos';
+const SHEET_MOVIMIENTOS = 'MOVIMIENTOS';
 const SHEET_USUARIOS = 'USUARIOS';
 
 function getAuth() {
@@ -349,12 +358,90 @@ export async function registrarGasto(gasto: Omit<Gasto, 'id'>): Promise<void> {
   // Orden real de columnas: FECHA, CUENTA, OBSERVACION, IMPORTE, USUARIO
   const row = [gasto.fecha, gasto.categoria, gasto.descripcion, gasto.monto, gasto.usuario || ''];
 
-  await sheets.spreadsheets.values.append({
+  // NO usamos values.append: en esta hoja arrastra datos viejos en columnas D:H
+  // y el auto-detect de Google inserta desfasado (las filas caían en D:H y
+  // getGastos, que lee A:E, nunca las veía). Calculamos la próxima fila libre
+  // a mano y escribimos en un rango A:E explícito.
+  const proxima = await proximaFilaLibre(sheets, SHEET_GASTOS);
+
+  // A diferencia de append, values.update no agranda la grilla: si la próxima
+  // fila se pasa del rowCount de la hoja, primero agregamos filas.
+  await asegurarFila(sheets, SHEET_GASTOS, proxima);
+
+  await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_GASTOS}!A:E`,
+    range: `${SHEET_GASTOS}!A${proxima}:E${proxima}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
+}
+
+// Primera fila realmente libre de la hoja.
+//
+// Mira A:E y no sólo la columna A: un gasto a medio cargar tiene importe en D
+// pero la fecha (A) vacía, así que contando la columna A esa fila figuraba como
+// libre y el próximo gasto la pisaba. Como además el flujo de "completar
+// pendiente" borra la fila del pendiente después de guardar, terminaba borrando
+// el gasto recién escrito.
+async function proximaFilaLibre(sheets: ReturnType<typeof google.sheets>, hoja: string) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${hoja}!A:E`,
+  });
+  return (res.data.values?.length ?? 0) + 1;
+}
+
+// Garantiza que la hoja tenga al menos `fila` filas en la grilla.
+async function asegurarFila(
+  sheets: ReturnType<typeof google.sheets>,
+  nombreHoja: string,
+  fila: number
+) {
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: SPREADSHEET_ID,
+    fields: 'sheets(properties(sheetId,title,gridProperties(rowCount)))',
+  });
+  const hoja = (meta.data.sheets || []).find(
+    (s) => (s.properties?.title || '').trim().toLowerCase() === nombreHoja.toLowerCase()
+  );
+  const sheetId = hoja?.properties?.sheetId;
+  const rowCount = hoja?.properties?.gridProperties?.rowCount ?? 0;
+  if (sheetId == null || fila <= rowCount) return;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [
+        { appendDimension: { sheetId, dimension: 'ROWS', length: fila - rowCount + 100 } },
+      ],
+    },
+  });
+}
+
+// Gastos a medio cargar: tienen importe (columna D) pero les falta la fecha
+// (columna A). Se exponen como alerta en /gastos.
+export async function getGastosPendientes(): Promise<GastoPendiente[]> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_GASTOS}!A2:E10000`,
+    });
+
+    const rows = response.data.values || [];
+    return rows
+      .map((row, i) => ({ row, sheetRow: i + 2 }))
+      .filter(({ row }) => !row[0] && parsePrecio(row[3]) > 0)
+      .map(({ row, sheetRow }) => ({
+        id: String(sheetRow),
+        monto: parsePrecio(row[3]),
+        usuario: row[4] || '',
+      }));
+  } catch {
+    return [];
+  }
 }
 
 export async function borrarGasto(id: string): Promise<void> {
@@ -401,6 +488,115 @@ async function ensureGastosSheet(sheets: ReturnType<typeof google.sheets>) {
       range: `${SHEET_GASTOS}!A1:E1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [['FECHA', 'CUENTA', 'OBSERVACION', 'IMPORTE', 'USUARIO']] },
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (!msg.includes('already exists')) throw error;
+  }
+}
+
+// ── MOVIMIENTOS DE CAJA ───────────────────────────────────────────────────────
+
+// Estructura de la hoja MOVIMIENTOS: A=FECHA, B=TIPO, C=DETALLE, D=IMPORTE, E=USUARIO
+//
+// Plata que entra o sale de la caja sin ser venta ni gasto. El signo del IMPORTE
+// dice para dónde va: positivo entra (préstamo recibido, aporte), negativo sale
+// (devolución de ese préstamo, retiro). Guardarlo con signo en vez de una columna
+// aparte hace que en la planilla se lea solo y que el saldo sea una simple suma.
+
+export async function getMovimientos(): Promise<MovimientoCaja[]> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_MOVIMIENTOS}!A2:E10000`,
+    });
+
+    const rows = response.data.values || [];
+    return rows
+      .map((row, i) => ({ row, sheetRow: i + 2 }))
+      // Importe 0 es una fila vacía o a medio cargar; el signo no importa acá.
+      .filter(({ row }) => row[0] && parsePrecio(row[3]) !== 0)
+      .map(({ row, sheetRow }) => ({
+        id: String(sheetRow),
+        fecha: normalizarFecha(row[0] || '', ''),
+        tipo: row[1] || 'Otro',
+        detalle: row[2] || '',
+        monto: parsePrecio(row[3]),
+        usuario: row[4] || '',
+      }));
+  } catch {
+    // La hoja todavía no existe: no hay movimientos que mostrar.
+    return [];
+  }
+}
+
+export async function registrarMovimiento(mov: Omit<MovimientoCaja, 'id'>): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  await ensureMovimientosSheet(sheets);
+
+  const row = [mov.fecha, mov.tipo, mov.detalle, mov.monto, mov.usuario || ''];
+
+  const proxima = await proximaFilaLibre(sheets, SHEET_MOVIMIENTOS);
+  await asegurarFila(sheets, SHEET_MOVIMIENTOS, proxima);
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_MOVIMIENTOS}!A${proxima}:E${proxima}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [row] },
+  });
+}
+
+export async function borrarMovimiento(id: string): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = parseInt(id, 10);
+  if (!fila || fila < 2) throw new Error('Movimiento inválido');
+
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hoja = (spreadsheet.data.sheets || []).find(
+    (s) => (s.properties?.title || '').trim().toLowerCase() === SHEET_MOVIMIENTOS.toLowerCase()
+  );
+  const sheetId = hoja?.properties?.sheetId;
+  if (sheetId == null) throw new Error('No existe la hoja MOVIMIENTOS');
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: { sheetId, dimension: 'ROWS', startIndex: fila - 1, endIndex: fila },
+          },
+        },
+      ],
+    },
+  });
+}
+
+async function ensureMovimientosSheet(sheets: ReturnType<typeof google.sheets>) {
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hojas = (spreadsheet.data.sheets || []).map((s) =>
+    (s.properties?.title || '').trim().toLowerCase()
+  );
+  if (hojas.includes(SHEET_MOVIMIENTOS.toLowerCase())) return;
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: SHEET_MOVIMIENTOS } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_MOVIMIENTOS}!A1:E1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['FECHA', 'TIPO', 'DETALLE', 'IMPORTE', 'USUARIO']] },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

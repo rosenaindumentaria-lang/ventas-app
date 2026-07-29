@@ -2,22 +2,57 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const LINKS = [
   { href: '/', label: 'Registrar Venta' },
   { href: '/historial', label: 'Historial' },
   { href: '/gastos', label: 'Gastos' },
+  { href: '/movimientos', label: 'Movimientos' },
   { href: '/caja', label: 'Caja' },
   { href: '/reportes', label: 'Reportes' },
 ];
 
+// La pantalla de Gastos avisa por acá cuando se completa o descarta un
+// pendiente, así el globito de la nav se actualiza sin recargar la página.
+export const EVENTO_PENDIENTES = 'gastos-pendientes-actualizados';
+
+// Globito rojo con la cantidad de gastos a medio registrar.
+function Globo({ n }: { n: number }) {
+  return (
+    <span
+      title={`${n} ${n === 1 ? 'gasto a medio registrar' : 'gastos a medio registrar'}`}
+      className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-[18px] text-white"
+    >
+      {n}
+    </span>
+  );
+}
+
 export default function NavBar({ nombre, rol }: { nombre: string; rol: string }) {
   const [abierto, setAbierto] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
+  const [pendientes, setPendientes] = useState(0);
   const pathname = usePathname();
 
   const links = rol === 'admin' ? [...LINKS, { href: '/usuarios', label: 'Usuarios' }] : LINKS;
+
+  const contarPendientes = useCallback(() => {
+    fetch('/api/gastos/pendientes')
+      .then((r) => r.json())
+      .then((data) => setPendientes(Array.isArray(data) ? data.length : 0))
+      .catch(() => setPendientes(0));
+  }, []);
+
+  // Al cambiar de pantalla y cada vez que Gastos avisa que algo cambió.
+  useEffect(() => {
+    contarPendientes();
+  }, [contarPendientes, pathname]);
+
+  useEffect(() => {
+    window.addEventListener(EVENTO_PENDIENTES, contarPendientes);
+    return () => window.removeEventListener(EVENTO_PENDIENTES, contarPendientes);
+  }, [contarPendientes]);
 
   async function salir() {
     setSaliendo(true);
@@ -43,10 +78,15 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
           </Link>
 
           {/* Links en escritorio */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
             {links.map((l) => (
-              <Link key={l.href} href={l.href} className={claseLink(l.href)}>
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`${claseLink(l.href)} inline-flex items-center gap-1.5`}
+              >
                 {l.label}
+                {l.href === '/gastos' && pendientes > 0 && <Globo n={pendientes} />}
               </Link>
             ))}
           </div>
@@ -69,10 +109,14 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
           {/* Botón hamburguesa en mobile */}
           <button
             onClick={() => setAbierto((v) => !v)}
-            className="md:hidden p-2 -mr-2 text-stone-700"
-            aria-label="Menú"
+            className="md:hidden relative p-2 -mr-2 text-stone-700"
+            aria-label={pendientes > 0 ? `Menú (${pendientes} gastos a medio registrar)` : 'Menú'}
             aria-expanded={abierto}
           >
+            {/* En mobile los links están escondidos: el puntito avisa igual. */}
+            {pendientes > 0 && !abierto && (
+              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+            )}
             {abierto ? (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -97,9 +141,10 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
                   key={l.href}
                   href={l.href}
                   onClick={() => setAbierto(false)}
-                  className={`py-2.5 ${claseLink(l.href)}`}
+                  className={`py-2.5 inline-flex items-center gap-2 ${claseLink(l.href)}`}
                 >
                   {l.label}
+                  {l.href === '/gastos' && pendientes > 0 && <Globo n={pendientes} />}
                 </Link>
               ))}
             </div>

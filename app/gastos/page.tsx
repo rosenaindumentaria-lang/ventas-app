@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Gasto } from '@/lib/types';
+import { Gasto, GastoPendiente } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
+import { EVENTO_PENDIENTES } from '@/app/components/NavBar';
 
 const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero'];
 
 export default function Gastos() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [pendientes, setPendientes] = useState<GastoPendiente[]>([]);
+  const [pendienteId, setPendienteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
@@ -27,9 +30,45 @@ export default function Gastos() {
       });
   }
 
+  function cargarPendientes() {
+    fetch('/api/gastos/pendientes')
+      .then((r) => r.json())
+      .then((data) => setPendientes(Array.isArray(data) ? data : []))
+      .catch(() => setPendientes([]));
+  }
+
+  // Avisa a la nav para que recalcule el globito.
+  function avisarNav() {
+    window.dispatchEvent(new Event(EVENTO_PENDIENTES));
+  }
+
   useEffect(() => {
     cargarGastos();
+    cargarPendientes();
   }, []);
+
+  // Cargar un pendiente en el formulario para terminar de registrarlo.
+  function completarPendiente(p: GastoPendiente) {
+    setPendienteId(p.id);
+    setMonto(String(p.monto));
+    setMensaje(null);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function descartarPendiente(id: string) {
+    if (!confirm('¿Descartar este importe a medio cargar?')) return;
+    setProcesando(true);
+    try {
+      const res = await fetch(`/api/gastos?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPendientes((prev) => prev.filter((p) => p.id !== id));
+        if (pendienteId === id) setPendienteId(null);
+        avisarNav();
+      } else alert('Error al descartar');
+    } finally {
+      setProcesando(false);
+    }
+  }
 
   async function registrar() {
     if (!descripcion.trim() || !monto) return;
@@ -48,6 +87,13 @@ export default function Gastos() {
         setDescripcion('');
         setMonto('');
         setCategoria('Gasto Adm');
+        // Si veníamos completando un pendiente, borramos la fila huérfana.
+        if (pendienteId) {
+          await fetch(`/api/gastos?id=${pendienteId}`, { method: 'DELETE' }).catch(() => {});
+          setPendienteId(null);
+          cargarPendientes();
+          avisarNav();
+        }
         cargarGastos();
       } else {
         const data = await res.json().catch(() => ({}));
@@ -80,10 +126,64 @@ export default function Gastos() {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Gastos</h1>
 
+      {pendientes.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-800">
+            ⚠️ {pendientes.length === 1 ? 'Hay un gasto' : `Hay ${pendientes.length} gastos`} a medio
+            registrar
+          </p>
+          <p className="text-xs text-amber-700 mb-3">
+            Tienen importe pero les falta la fecha y el detalle. Completalos o descartalos.
+          </p>
+          <ul className="space-y-2">
+            {pendientes.map((p) => (
+              <li
+                key={p.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white px-3 py-2"
+              >
+                <span className="text-sm font-semibold text-gray-800">
+                  {formatPrecio(p.monto)}
+                  {p.usuario && <span className="ml-2 text-xs font-normal text-gray-400">{p.usuario}</span>}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => completarPendiente(p)}
+                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600"
+                  >
+                    Completar
+                  </button>
+                  <button
+                    onClick={() => descartarPendiente(p.id)}
+                    disabled={procesando}
+                    className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 disabled:opacity-50"
+                  >
+                    Descartar
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-6">
         {/* Formulario */}
         <div className="bg-white rounded-xl shadow p-6 space-y-4 h-fit">
-          <h2 className="text-sm font-semibold text-gray-700">Registrar gasto</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">Registrar gasto</h2>
+            {pendienteId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPendienteId(null);
+                  setMonto('');
+                }}
+                className="text-xs text-amber-600 hover:underline"
+              >
+                Completando pendiente · cancelar
+              </button>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
