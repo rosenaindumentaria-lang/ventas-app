@@ -43,18 +43,54 @@ export default function Movimientos() {
   const [busqueda, setBusqueda] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
 
+  // Formulario (alta o edición)
   const hoy = new Date().toISOString().split('T')[0];
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [sentido, setSentido] = useState<Sentido>('entrada');
   const [detalle, setDetalle] = useState('');
   const [tipo, setTipo] = useState<string>(TIPOS_ENTRADA[0]);
   const [monto, setMonto] = useState('');
   const [fecha, setFecha] = useState(hoy);
 
-  const tipos = sentido === 'entrada' ? TIPOS_ENTRADA : TIPOS_SALIDA;
+  // Si el movimiento que se edita tiene un tipo viejo que ya no está en la lista
+  // de alta, se agrega igual para no perderlo al guardar.
+  const tipos = useMemo(() => {
+    const base = sentido === 'entrada' ? TIPOS_ENTRADA : TIPOS_SALIDA;
+    return (base as readonly string[]).includes(tipo) ? base : [...base, tipo];
+  }, [sentido, tipo]);
 
   function cambiarSentido(s: Sentido) {
     setSentido(s);
     setTipo(s === 'entrada' ? TIPOS_ENTRADA[0] : TIPOS_SALIDA[0]);
+  }
+
+  function empezarEdicion(m: MovimientoCaja) {
+    setEditandoId(m.id);
+    // El sentido sale del signo guardado, no del nombre del tipo.
+    setSentido(m.monto >= 0 ? 'entrada' : 'salida');
+    setTipo(m.tipo);
+    setDetalle(m.detalle);
+    setMonto(String(Math.abs(m.monto)));
+    setFecha(m.fecha);
+    setMensaje(null);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Deja el formulario en blanco SIN tocar el mensaje, para poder mostrar el
+  // "guardado" despues de limpiar. cancelarEdicion sí lo borra, porque ahi el
+  // usuario esta descartando lo que estaba haciendo.
+  function limpiarFormulario() {
+    setEditandoId(null);
+    setSentido('entrada');
+    setTipo(TIPOS_ENTRADA[0]);
+    setDetalle('');
+    setMonto('');
+    setFecha(hoy);
+  }
+
+  function cancelarEdicion() {
+    limpiarFormulario();
+    setMensaje(null);
   }
 
   function cargarMovimientos() {
@@ -72,26 +108,31 @@ export default function Movimientos() {
     cargarMovimientos();
   }, []);
 
-  async function registrar() {
+  async function guardar() {
     if (!detalle.trim() || !monto) return;
     setGuardando(true);
     setMensaje(null);
+
+    const esEdicion = editandoId !== null;
+    const cuerpo = { detalle, tipo, monto: parseFloat(monto), fecha, sentido };
+
     try {
       const res = await fetch('/api/movimientos', {
-        method: 'POST',
+        method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ detalle, tipo, monto: parseFloat(monto), fecha, sentido }),
+        body: JSON.stringify(esEdicion ? { ...cuerpo, id: editandoId } : cuerpo),
       });
 
       if (res.ok) {
-        setMensaje({ tipo: 'ok', texto: 'Movimiento registrado' });
-        setDetalle('');
-        setMonto('');
-        setFecha(hoy);
+        setMensaje({
+          tipo: 'ok',
+          texto: esEdicion ? '✅ Movimiento actualizado' : '✅ Movimiento registrado',
+        });
+        limpiarFormulario();
         cargarMovimientos();
       } else {
         const data = await res.json().catch(() => ({}));
-        setMensaje({ tipo: 'error', texto: data.detalle || 'Error al registrar' });
+        setMensaje({ tipo: 'error', texto: data.detalle || 'Error al guardar' });
       }
     } catch {
       setMensaje({ tipo: 'error', texto: 'Error de conexión' });
@@ -105,8 +146,10 @@ export default function Movimientos() {
     setProcesando(true);
     try {
       const res = await fetch(`/api/movimientos?id=${id}`, { method: 'DELETE' });
-      if (res.ok) cargarMovimientos();
-      else alert('Error al borrar');
+      if (res.ok) {
+        if (editandoId === id) cancelarEdicion();
+        cargarMovimientos();
+      } else alert('Error al borrar');
     } finally {
       setProcesando(false);
     }
@@ -160,8 +203,17 @@ export default function Movimientos() {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Formulario */}
-        <div className="bg-white rounded-xl shadow p-6 space-y-4 h-fit">
-          <h2 className="text-sm font-semibold text-gray-700">Registrar movimiento</h2>
+        <div className={`bg-white rounded-xl shadow p-6 space-y-4 h-fit ${editandoId ? 'ring-2 ring-indigo-300' : ''}`}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">
+              {editandoId ? 'Editar movimiento' : 'Registrar movimiento'}
+            </h2>
+            {editandoId && (
+              <button type="button" onClick={cancelarEdicion} className="text-xs text-indigo-600 hover:underline">
+                Cancelar
+              </button>
+            )}
+          </div>
 
           {/* Entra o sale */}
           <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
@@ -252,7 +304,7 @@ export default function Movimientos() {
           </div>
 
           <button
-            onClick={registrar}
+            onClick={guardar}
             disabled={!detalle.trim() || !monto || guardando}
             className={`w-full disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors ${
               sentido === 'entrada'
@@ -260,7 +312,13 @@ export default function Movimientos() {
                 : 'bg-amber-500 hover:bg-amber-600'
             }`}
           >
-            {guardando ? 'Guardando...' : sentido === 'entrada' ? 'Registrar entrada' : 'Registrar salida'}
+            {guardando
+              ? 'Guardando...'
+              : editandoId
+                ? 'Guardar cambios'
+                : sentido === 'entrada'
+                  ? 'Registrar entrada'
+                  : 'Registrar salida'}
           </button>
 
           {mensaje && (
@@ -336,7 +394,12 @@ export default function Movimientos() {
               {movsFiltrados.map((m) => {
                 const entra = m.monto > 0;
                 return (
-                  <li key={m.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                  <li
+                    key={m.id}
+                    className={`px-5 py-3 flex items-center justify-between gap-3 ${
+                      editandoId === m.id ? 'bg-indigo-50' : ''
+                    }`}
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{m.detalle}</p>
                       <p className="text-xs text-gray-400">
@@ -351,6 +414,14 @@ export default function Movimientos() {
                     >
                       {entra ? '+' : '−'} {formatPrecio(Math.abs(m.monto))}
                     </span>
+                    <button
+                      onClick={() => empezarEdicion(m)}
+                      disabled={procesando}
+                      className="text-gray-300 hover:text-indigo-500 transition-colors disabled:opacity-50 shrink-0"
+                      title="Editar"
+                    >
+                      ✏️
+                    </button>
                     <button
                       onClick={() => borrar(m.id)}
                       disabled={procesando}

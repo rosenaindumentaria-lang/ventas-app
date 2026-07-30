@@ -582,6 +582,26 @@ export async function registrarMovimiento(mov: Omit<MovimientoCaja, 'id'>): Prom
   });
 }
 
+export async function editarMovimiento(
+  id: string,
+  campos: { fecha: string; tipo: string; detalle: string; monto: number }
+): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = parseInt(id, 10);
+  if (!fila || fila < 2) throw new Error('Movimiento inválido');
+
+  // Se escribe A:D y no A:E a proposito: la columna E guarda quien lo cargo, y
+  // editarlo no cambia esa autoria.
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_MOVIMIENTOS}!A${fila}:D${fila}`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[campos.fecha, campos.tipo, campos.detalle, campos.monto]] },
+  });
+}
+
 export async function borrarMovimiento(id: string): Promise<void> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });

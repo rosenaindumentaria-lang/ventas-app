@@ -74,12 +74,19 @@ export default function Gastos() {
     setMensaje(null);
   }
 
-  function cancelarEdicion() {
+  // Deja el formulario en blanco SIN tocar el mensaje, para poder mostrar el
+  // "guardado" despues de limpiar. cancelarEdicion sí lo borra, porque ahi el
+  // usuario esta descartando lo que estaba haciendo.
+  function limpiarFormulario() {
     setEditandoId(null);
     setDescripcion('');
     setCategoria('Gasto Adm');
     setMonto('');
     setFecha(new Date().toISOString().split('T')[0]);
+  }
+
+  function cancelarEdicion() {
+    limpiarFormulario();
     setMensaje(null);
   }
 
@@ -136,7 +143,7 @@ export default function Gastos() {
 
       if (res.ok) {
         setMensaje({ tipo: 'ok', texto: esEdicion ? '✅ Gasto actualizado' : '✅ Gasto registrado' });
-        cancelarEdicion();
+        limpiarFormulario();
         // Si lo que se guardó era un pendiente, ya tiene fecha y deja de serlo.
         cargarPendientes();
         avisarNav();
