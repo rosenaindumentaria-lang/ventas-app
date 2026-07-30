@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Gasto, GastoPendiente } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 import { EVENTO_PENDIENTES } from '@/app/components/NavBar';
+import Filtros from '@/app/components/Filtros';
 
 // "Pago Mercadería" ya no está: la compra de mercadería no es un gasto, es una
 // salida de caja. Su costo se descuenta solo al vender, dentro de la ganancia
@@ -20,6 +21,12 @@ export default function Gastos() {
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
+  // Filtros de la lista
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState('');
 
   // Formulario (nuevo o edición)
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -164,6 +171,37 @@ export default function Gastos() {
   const totalMes = gastos
     .filter((g) => g.fecha.startsWith(new Date().toISOString().slice(0, 7)))
     .reduce((a, g) => a + g.monto, 0);
+
+  const gastosFiltrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    return gastos.filter((g) => {
+      const cumpleFecha = (!fechaDesde || g.fecha >= fechaDesde) && (!fechaHasta || g.fecha <= fechaHasta);
+      const cumpleCategoria = !filtroCategoria || g.categoria === filtroCategoria;
+      const cumpleTexto =
+        !texto ||
+        g.descripcion.toLowerCase().includes(texto) ||
+        g.categoria.toLowerCase().includes(texto) ||
+        (g.usuario || '').toLowerCase().includes(texto);
+      return cumpleFecha && cumpleCategoria && cumpleTexto;
+    });
+  }, [gastos, fechaDesde, fechaHasta, filtroCategoria, busqueda]);
+
+  const totalFiltrado = gastosFiltrados.reduce((a, g) => a + g.monto, 0);
+  const hayFiltros = Boolean(fechaDesde || fechaHasta || busqueda || filtroCategoria);
+
+  // Las categorias del selector salen de los datos y no de CATEGORIAS, para que
+  // sigan siendo filtrables las que quedaron de antes (ej. "Pago Mercadería").
+  const categoriasPresentes = useMemo(
+    () => Array.from(new Set(gastos.map((g) => g.categoria).filter(Boolean))).sort(),
+    [gastos]
+  );
+
+  function limpiarFiltros() {
+    setFechaDesde('');
+    setFechaHasta('');
+    setBusqueda('');
+    setFiltroCategoria('');
+  }
 
   return (
     <div>
@@ -329,9 +367,34 @@ export default function Gastos() {
         </div>
 
         {/* Lista */}
-        <div className="bg-white rounded-xl shadow overflow-hidden h-fit">
-          <div className="px-5 py-4 border-b">
-            <h2 className="text-sm font-semibold text-gray-700">Últimos gastos</h2>
+        <div className="h-fit">
+          <Filtros
+            desde={fechaDesde}
+            hasta={fechaHasta}
+            onDesde={setFechaDesde}
+            onHasta={setFechaHasta}
+            busqueda={busqueda}
+            onBusqueda={setBusqueda}
+            buscarLabel="Buscar"
+            buscarPlaceholder="Descripción, categoría o usuario..."
+            select={{
+              label: 'Categoría',
+              valor: filtroCategoria,
+              onChange: setFiltroCategoria,
+              opciones: categoriasPresentes,
+              etiquetaTodas: 'Todas',
+            }}
+            onLimpiar={limpiarFiltros}
+            hayFiltros={hayFiltros}
+          />
+
+          <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="px-5 py-4 border-b flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-gray-700">
+              {hayFiltros ? 'Gastos filtrados' : 'Últimos gastos'}
+              <span className="ml-2 font-normal text-gray-400">({gastosFiltrados.length})</span>
+            </h2>
+            <span className="text-sm font-bold text-rose-600 shrink-0">{formatPrecio(totalFiltrado)}</span>
           </div>
           {loading ? (
             <p className="text-gray-400 text-sm text-center py-8">Cargando...</p>
@@ -342,11 +405,13 @@ export default function Gastos() {
                 Reintentar
               </button>
             </div>
-          ) : gastos.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">No hay gastos registrados</p>
+          ) : gastosFiltrados.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">
+              {hayFiltros ? 'Ningún gasto coincide con esos filtros' : 'No hay gastos registrados'}
+            </p>
           ) : (
             <ul className="divide-y divide-gray-100 max-h-[520px] overflow-y-auto">
-              {gastos.map((g) => (
+              {gastosFiltrados.map((g) => (
                 <li
                   key={g.id}
                   className={`px-5 py-3 flex items-center justify-between gap-3 ${
@@ -383,6 +448,7 @@ export default function Gastos() {
               ))}
             </ul>
           )}
+          </div>
         </div>
       </div>
     </div>

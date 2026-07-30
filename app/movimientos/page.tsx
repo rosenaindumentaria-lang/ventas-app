@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MovimientoCaja, TIPOS_ENTRADA, TIPOS_SALIDA } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
+import Filtros from '@/app/components/Filtros';
 
 type Sentido = 'entrada' | 'salida';
 
@@ -35,6 +36,12 @@ export default function Movimientos() {
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
+  // Filtros de la lista
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('');
 
   const hoy = new Date().toISOString().split('T')[0];
   const [sentido, setSentido] = useState<Sentido>('entrada');
@@ -105,9 +112,43 @@ export default function Movimientos() {
     }
   }
 
-  const totalEntradas = movimientos.filter((m) => m.monto > 0).reduce((a, m) => a + m.monto, 0);
-  const totalSalidas = movimientos.filter((m) => m.monto < 0).reduce((a, m) => a - m.monto, 0);
+  const movsFiltrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    return movimientos
+      .filter((m) => {
+        const cumpleFecha =
+          (!fechaDesde || m.fecha >= fechaDesde) && (!fechaHasta || m.fecha <= fechaHasta);
+        const cumpleTipo = !filtroTipo || m.tipo === filtroTipo;
+        const cumpleTexto =
+          !texto ||
+          m.detalle.toLowerCase().includes(texto) ||
+          m.tipo.toLowerCase().includes(texto) ||
+          (m.usuario || '').toLowerCase().includes(texto);
+        return cumpleFecha && cumpleTipo && cumpleTexto;
+      })
+      // Más recientes primero, igual que Historial y Gastos.
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }, [movimientos, fechaDesde, fechaHasta, filtroTipo, busqueda]);
+
+  // Los totales siguen al filtro: si mirás un mes, ves el neto de ese mes.
+  const totalEntradas = movsFiltrados.filter((m) => m.monto > 0).reduce((a, m) => a + m.monto, 0);
+  const totalSalidas = movsFiltrados.filter((m) => m.monto < 0).reduce((a, m) => a - m.monto, 0);
   const neto = totalEntradas - totalSalidas;
+  const hayFiltros = Boolean(fechaDesde || fechaHasta || busqueda || filtroTipo);
+
+  // Del dato y no de las constantes, para que sigan siendo filtrables los tipos
+  // viejos que ya no estan en la lista de alta.
+  const tiposPresentes = useMemo(
+    () => Array.from(new Set(movimientos.map((m) => m.tipo).filter(Boolean))).sort(),
+    [movimientos]
+  );
+
+  function limpiarFiltros() {
+    setFechaDesde('');
+    setFechaHasta('');
+    setBusqueda('');
+    setFiltroTipo('');
+  }
 
   return (
     <div>
@@ -251,17 +292,48 @@ export default function Movimientos() {
         </div>
 
         {/* Lista */}
-        <div className="bg-white rounded-xl shadow overflow-hidden h-fit">
-          <div className="px-5 py-4 border-b">
-            <h2 className="text-sm font-semibold text-gray-700">Últimos movimientos</h2>
+        <div className="h-fit">
+          <Filtros
+            desde={fechaDesde}
+            hasta={fechaHasta}
+            onDesde={setFechaDesde}
+            onHasta={setFechaHasta}
+            busqueda={busqueda}
+            onBusqueda={setBusqueda}
+            buscarLabel="Buscar"
+            buscarPlaceholder="Detalle, tipo o usuario..."
+            select={{
+              label: 'Tipo',
+              valor: filtroTipo,
+              onChange: setFiltroTipo,
+              opciones: tiposPresentes,
+              etiquetaTodas: 'Todos',
+            }}
+            onLimpiar={limpiarFiltros}
+            hayFiltros={hayFiltros}
+          />
+
+          <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="px-5 py-4 border-b flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-gray-700">
+              {hayFiltros ? 'Movimientos filtrados' : 'Últimos movimientos'}
+              <span className="ml-2 font-normal text-gray-400">({movsFiltrados.length})</span>
+            </h2>
+            <span className={`text-sm font-bold shrink-0 ${neto >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              {formatPrecio(neto)}
+            </span>
           </div>
           {loading ? (
             <p className="text-gray-400 text-sm text-center py-8">Cargando...</p>
-          ) : movimientos.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">No hay movimientos registrados</p>
+          ) : movsFiltrados.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">
+              {hayFiltros
+                ? 'Ningún movimiento coincide con esos filtros'
+                : 'No hay movimientos registrados'}
+            </p>
           ) : (
             <ul className="divide-y divide-gray-100 max-h-[520px] overflow-y-auto">
-              {movimientos.map((m) => {
+              {movsFiltrados.map((m) => {
                 const entra = m.monto > 0;
                 return (
                   <li key={m.id} className="px-5 py-3 flex items-center justify-between gap-3">
@@ -292,6 +364,7 @@ export default function Movimientos() {
               })}
             </ul>
           )}
+          </div>
         </div>
       </div>
     </div>

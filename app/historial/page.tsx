@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Venta } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
+import Filtros from '@/app/components/Filtros';
 
 export default function Historial() {
   const [ventas, setVentas] = useState<Venta[]>([]);
@@ -94,43 +95,22 @@ export default function Historial() {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Historial de Ventas</h1>
 
-      {/* Filtros */}
-      <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Desde</label>
-          <input
-            type="date"
-            value={fechaDesde}
-            onChange={(e) => setFechaDesde(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
-          <input
-            type="date"
-            value={fechaHasta}
-            onChange={(e) => setFechaHasta(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-        </div>
-        <div className="flex-1 min-w-[180px]">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Producto</label>
-          <input
-            type="text"
-            placeholder="Buscar producto..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
-        </div>
-        <button
-          onClick={() => { setFechaDesde(''); setFechaHasta(''); setBusqueda(''); }}
-          className="text-sm text-indigo-600 hover:underline"
-        >
-          Limpiar filtros
-        </button>
-      </div>
+      <Filtros
+        desde={fechaDesde}
+        hasta={fechaHasta}
+        onDesde={setFechaDesde}
+        onHasta={setFechaHasta}
+        busqueda={busqueda}
+        onBusqueda={setBusqueda}
+        buscarLabel="Producto"
+        buscarPlaceholder="Buscar producto..."
+        onLimpiar={() => {
+          setFechaDesde('');
+          setFechaHasta('');
+          setBusqueda('');
+        }}
+        hayFiltros={Boolean(fechaDesde || fechaHasta || busqueda)}
+      />
 
       {/* Resumen */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
