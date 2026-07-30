@@ -48,7 +48,16 @@ export interface MovimientoCaja {
 
 export const TIPOS_ENTRADA = ['Préstamo', 'Aporte de socio', 'Devolución', 'Otro'] as const;
 
+// Salidas de caja que NO son gasto. En todas, la plata se convierte en algo que
+// seguís teniendo (stock, muebles) o cancela una deuda, en vez de consumirse:
+//  - Compra de mercadería: se vuelve gasto recién cuando la vendés, y eso ya lo
+//    descuenta la ganancia de cada venta (el CMV). Cargarla también como gasto
+//    la restaría dos veces.
+//  - Compra de bienes: muebles, instalaciones, equipos. Se gastan de a poco por
+//    desgaste; la app no calcula depreciación, así que no tocan la ganancia.
 export const TIPOS_SALIDA = [
+  'Compra de mercadería',
+  'Compra de bienes',
   'Devolución de préstamo',
   'Retiro de socio',
   'Otra salida',

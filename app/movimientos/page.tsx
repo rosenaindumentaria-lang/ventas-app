@@ -6,6 +6,29 @@ import { formatPrecio } from '@/lib/format';
 
 type Sentido = 'entrada' | 'salida';
 
+// Aclaraciones para los tipos que suelen confundirse con un gasto.
+const AYUDA_TIPO: Record<string, React.ReactNode> = {
+  'Compra de mercadería': (
+    <>
+      No la cargues en Gastos: el costo de la mercadería se descuenta solo cuando la vendés, porque
+      ya está metido en la <strong>ganancia de cada venta</strong>. Cargarla en los dos lados la
+      restaría dos veces.
+    </>
+  ),
+  'Compra de bienes': (
+    <>
+      Muebles, instalaciones, equipos. No es un gasto: convertís plata en algo que seguís teniendo.
+      Sale de la caja pero no baja la ganancia.
+    </>
+  ),
+  'Devolución de préstamo': (
+    <>
+      Cargá acá <strong>sólo la parte de capital</strong> de la cuota. Los intereses van en{' '}
+      <strong>Gastos → Gasto Financiero</strong>, porque ésos sí son un costo del negocio.
+    </>
+  ),
+};
+
 export default function Movimientos() {
   const [movimientos, setMovimientos] = useState<MovimientoCaja[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,11 +181,9 @@ export default function Movimientos() {
             </div>
           </div>
 
-          {/* Al devolver un préstamo sólo va el capital: el interés es un gasto real. */}
-          {tipo === 'Devolución de préstamo' && (
+          {AYUDA_TIPO[tipo] && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Cargá acá <strong>sólo la parte de capital</strong> de la cuota. Los intereses van en{' '}
-              <strong>Gastos → Gasto Financiero</strong>, porque ésos sí son un costo del negocio.
+              {AYUDA_TIPO[tipo]}
             </div>
           )}
 

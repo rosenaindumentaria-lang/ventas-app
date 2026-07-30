@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Gasto, GastoPendiente } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 import { EVENTO_PENDIENTES } from '@/app/components/NavBar';
 
-const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero', 'Pago Mercadería'];
+// "Pago Mercadería" ya no está: la compra de mercadería no es un gasto, es una
+// salida de caja. Su costo se descuenta solo al vender, dentro de la ganancia
+// de cada venta, asi que cargarla acá tambien la restaba dos veces. Va en
+// Movimientos → Sale plata → Compra de mercadería.
+const CATEGORIAS = ['Gasto Adm', 'Gasto Comercializacion', 'Gasto Fiscal', 'Gasto Financiero'];
 
 export default function Gastos() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -271,6 +276,14 @@ export default function Gastos() {
                 </button>
               ))}
             </div>
+            <p className="mt-2 text-xs text-gray-400">
+              ¿Compraste mercadería, muebles o instalaciones? No van acá: son salidas de caja, no
+              gastos.{' '}
+              <Link href="/movimientos" className="text-indigo-600 hover:underline">
+                Cargalas en Movimientos
+              </Link>
+              .
+            </p>
           </div>
 
           <div>
