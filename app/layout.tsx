@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   description: 'Gestión de ventas de Rosena Indumentaria',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon-512.png',
+    // La pestaña usa la inicial y no el logotipo entero: "ROSENA" a 16px es una
+    // mancha ilegible. El logotipo completo se sigue usando en el icono de la
+    // pantalla de inicio (apple-touch y manifest), donde sí hay lugar.
+    icon: '/icon-rosena.png',
     apple: '/apple-touch-icon.png',
   },
 };
