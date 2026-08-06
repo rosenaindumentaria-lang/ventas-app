@@ -187,10 +187,19 @@ export async function registrarVenta(venta: Omit<Venta, 'id'>): Promise<void> {
     venta.usuario || '',   // O USUARIO
   ];
 
-  await sheets.spreadsheets.values.append({
+  // NO usamos values.append. En esta hoja el auto-detect de Google anclaba la
+  // tabla en la columna N (donde estan los IDs) en vez de la A, y cada venta se
+  // escribia corrida 13 columnas: la fecha caia en N, el articulo en Q. Como
+  // getVentas lee A:O y exige fecha en A, esas ventas quedaban invisibles en el
+  // historial. Calculamos la proxima fila libre y escribimos un A:O explicito.
+  const proxima = await proximaFilaLibre(sheets, SHEET_VENTAS, 'O');
+  await asegurarFila(sheets, SHEET_VENTAS, proxima);
+
+  await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_VENTAS}!A:O`,
-    valueInputOption: 'USER_ENTERED',
+    range: `${SHEET_VENTAS}!A${proxima}:O${proxima}`,
+    // RAW para que Sheets no reinterprete la fecha, igual que en editarVenta.
+    valueInputOption: 'RAW',
     requestBody: { values: [row] },
   });
 }
@@ -388,15 +397,19 @@ export async function registrarGasto(gasto: Omit<Gasto, 'id'>): Promise<void> {
 
 // Primera fila realmente libre de la hoja.
 //
-// Mira A:E y no sólo la columna A: un gasto a medio cargar tiene importe en D
-// pero la fecha (A) vacía, así que contando la columna A esa fila figuraba como
-// libre y el próximo gasto la pisaba. Como además el flujo de "completar
-// pendiente" borra la fila del pendiente después de guardar, terminaba borrando
-// el gasto recién escrito.
-async function proximaFilaLibre(sheets: ReturnType<typeof google.sheets>, hoja: string) {
+// Mira todo el ancho de la tabla y no sólo la columna A: un gasto a medio cargar
+// tiene importe en D pero la fecha (A) vacía, así que contando la columna A esa
+// fila figuraba como libre y el próximo gasto la pisaba. Como además el flujo de
+// "completar pendiente" borra la fila del pendiente después de guardar,
+// terminaba borrando el gasto recién escrito.
+async function proximaFilaLibre(
+  sheets: ReturnType<typeof google.sheets>,
+  hoja: string,
+  ultimaColumna = 'E'
+) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${hoja}!A:E`,
+    range: `${hoja}!A:${ultimaColumna}`,
   });
   return (res.data.values?.length ?? 0) + 1;
 }
@@ -749,10 +762,16 @@ export async function crearUsuario(u: {
     throw new Error('Ya existe un usuario con ese nombre');
   }
 
-  await sheets.spreadsheets.values.append({
+  // Fila explicita en vez de append, por lo mismo que en VENTAS y GASTOS: el
+  // auto-detect de Google puede anclar la tabla en la columna equivocada y
+  // escribir la fila corrida.
+  const proxima = await proximaFilaLibre(sheets, SHEET_USUARIOS);
+  await asegurarFila(sheets, SHEET_USUARIOS, proxima);
+
+  await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_USUARIOS}!A:E`,
-    valueInputOption: 'USER_ENTERED',
+    range: `${SHEET_USUARIOS}!A${proxima}:E${proxima}`,
+    valueInputOption: 'RAW',
     requestBody: { values: [[usuario, u.hash, u.nombre, u.rol, 'TRUE']] },
   });
 }
