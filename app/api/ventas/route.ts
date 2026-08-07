@@ -10,7 +10,13 @@ export async function GET() {
     const ventasConGanancia = ventas.map((v) => {
       const prod = porCod.get(v.cod);
       const costo = v.costo > 0 ? v.costo : (prod?.costo ?? 0);
-      const ganancia = (v.precioUnitario - costo) * v.cantidad;
+      // La ganancia sale del TOTAL cobrado, no del precio de lista: cuando se
+      // hace un descuento, el total de la planilla es menor que
+      // precioUnitario x cantidad, y calcularla sobre la lista inventa una
+      // ganancia que nunca entró. Pasaba con el Vestido Dubai del 16/2, vendido
+      // a $69.300 sobre una lista de $84.403: sobrestimaba $15.103 y subía el
+      // margen de febrero de 49,1% a 55,6%.
+      const ganancia = v.total - costo * v.cantidad;
       return { ...v, costo, ganancia, rubro: prod?.rubro || 'Sin rubro' };
     });
 
@@ -32,7 +38,9 @@ export async function POST(request: Request) {
 
     const sesion = await getSesion();
     const total = precioUnitario * cantidad;
-    const ganancia = (precioUnitario - costo) * cantidad;
+    // Misma cuenta que en el GET, para que no se separen si un dia el alta
+    // permite cargar un total distinto al precio por la cantidad.
+    const ganancia = total - costo * cantidad;
     const fecha = fechaBody || new Date().toISOString().split('T')[0];
 
     await registrarVenta({
