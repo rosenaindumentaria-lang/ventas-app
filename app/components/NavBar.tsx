@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/movimientos', label: 'Movimientos' },
   { href: '/caja', label: 'Caja' },
   { href: '/reportes', label: 'Reportes' },
+  { href: '/campanias', label: 'Campañas' },
 ];
 
 // La pantalla de Gastos avisa por acá cuando se completa o descarta un
