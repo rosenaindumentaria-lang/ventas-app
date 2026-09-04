@@ -23,7 +23,7 @@ function Globo({ n }: { n: number }) {
   return (
     <span
       title={`${n} ${n === 1 ? 'gasto a medio registrar' : 'gastos a medio registrar'}`}
-      className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-[18px] text-white"
+      className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-rojo px-1.5 text-[11px] font-bold leading-[18px] text-white"
     >
       {n}
     </span>
@@ -64,12 +64,12 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
   function claseLink(href: string) {
     const activo = pathname === href;
     return `transition-colors text-sm font-medium ${
-      activo ? 'text-[#6b4423]' : 'text-stone-600 hover:text-[#6b4423]'
+      activo ? 'text-marca' : 'text-tinta-media hover:text-marca'
     }`;
   }
 
   return (
-    <nav className="bg-white border-b border-stone-200 shadow-sm">
+    <nav className="bg-panel border-b border-borde">
       <div className="max-w-5xl mx-auto px-4">
         {/* Barra principal */}
         <div className="flex items-center justify-between h-14">
@@ -94,14 +94,14 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
 
           {/* Usuario + salir en escritorio */}
           <div className="hidden md:flex items-center gap-3 text-sm">
-            <span className="text-stone-500">
+            <span className="text-tinta-suave">
               {nombre}
-              {rol === 'admin' && <span className="ml-1 text-stone-400">(admin)</span>}
+              {rol === 'admin' && <span className="ml-1 text-tinta-tenue">(admin)</span>}
             </span>
             <button
               onClick={salir}
               disabled={saliendo}
-              className="rounded bg-[#6b4423] px-3 py-1 font-medium text-white hover:bg-[#553619] disabled:opacity-50 transition-colors"
+              className="rounded bg-marca px-3 py-1 font-medium text-white hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
             >
               {saliendo ? 'Saliendo…' : 'Salir'}
             </button>
@@ -110,13 +110,13 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
           {/* Botón hamburguesa en mobile */}
           <button
             onClick={() => setAbierto((v) => !v)}
-            className="md:hidden relative p-2 -mr-2 text-stone-700"
+            className="md:hidden relative p-2 -mr-2 text-tinta-media"
             aria-label={pendientes > 0 ? `Menú (${pendientes} gastos a medio registrar)` : 'Menú'}
             aria-expanded={abierto}
           >
             {/* En mobile los links están escondidos: el puntito avisa igual. */}
             {pendientes > 0 && !abierto && (
-              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-rojo ring-2 ring-panel" />
             )}
             {abierto ? (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -135,7 +135,7 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
 
         {/* Menú desplegable en mobile */}
         {abierto && (
-          <div className="md:hidden border-t border-stone-100 py-2">
+          <div className="md:hidden border-t border-borde-suave py-2">
             <div className="flex flex-col">
               {links.map((l) => (
                 <Link
@@ -149,15 +149,15 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
                 </Link>
               ))}
             </div>
-            <div className="mt-2 pt-3 border-t border-stone-100 flex items-center justify-between">
-              <span className="text-sm text-stone-500">
+            <div className="mt-2 pt-3 border-t border-borde-suave flex items-center justify-between">
+              <span className="text-sm text-tinta-suave">
                 {nombre}
-                {rol === 'admin' && <span className="ml-1 text-stone-400">(admin)</span>}
+                {rol === 'admin' && <span className="ml-1 text-tinta-tenue">(admin)</span>}
               </span>
               <button
                 onClick={salir}
                 disabled={saliendo}
-                className="rounded bg-[#6b4423] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#553619] disabled:opacity-50 transition-colors"
+                className="rounded bg-marca px-4 py-1.5 text-sm font-medium text-white hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
               >
                 {saliendo ? 'Saliendo…' : 'Salir'}
               </button>

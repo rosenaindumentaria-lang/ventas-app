@@ -39,22 +39,22 @@ export default function Filtros({
   hayFiltros: boolean;
 }) {
   const campo =
-    'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400';
+    'w-full border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca';
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
+    <div className="panel p-4 mb-6 flex flex-wrap gap-4 items-end">
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Desde</label>
+        <label className="block text-xs font-medium text-tinta-suave mb-1">Desde</label>
         <input type="date" value={desde} onChange={(e) => onDesde(e.target.value)} className={campo} />
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
+        <label className="block text-xs font-medium text-tinta-suave mb-1">Hasta</label>
         <input type="date" value={hasta} onChange={(e) => onHasta(e.target.value)} className={campo} />
       </div>
 
       {select && (
         <div className="min-w-[160px]">
-          <label className="block text-xs font-medium text-gray-500 mb-1">{select.label}</label>
+          <label className="block text-xs font-medium text-tinta-suave mb-1">{select.label}</label>
           <select value={select.valor} onChange={(e) => select.onChange(e.target.value)} className={campo}>
             <option value="">{select.etiquetaTodas}</option>
             {select.opciones.map((o) => (
@@ -67,7 +67,7 @@ export default function Filtros({
       )}
 
       <div className="flex-1 min-w-[180px]">
-        <label className="block text-xs font-medium text-gray-500 mb-1">{buscarLabel}</label>
+        <label className="block text-xs font-medium text-tinta-suave mb-1">{buscarLabel}</label>
         <input
           type="text"
           placeholder={buscarPlaceholder}
@@ -79,7 +79,7 @@ export default function Filtros({
 
       {/* Solo tiene sentido ofrecer limpiar si hay algo puesto. */}
       {hayFiltros && (
-        <button onClick={onLimpiar} className="text-sm text-indigo-600 hover:underline">
+        <button onClick={onLimpiar} className="text-sm text-marca hover:underline">
           Limpiar filtros
         </button>
       )}

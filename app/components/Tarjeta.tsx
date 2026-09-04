@@ -3,6 +3,9 @@
 // Tarjeta de indicador: etiqueta, valor y, si hay con qué comparar, la variación
 // contra el período anterior.
 //
+// `destacado` ya no es un anillo: en este sistema el énfasis lo da el borde,
+// que pasa del color de línea al color de marca.
+//
 // El color de la variación NO sale del signo sino de si es buena noticia: que
 // suban las ventas es verde, que suba "gastos sobre ventas" es rojo. Por eso
 // `subeEsBueno`. Y nunca queda sólo en el color: siempre va la flecha y el texto.
@@ -38,22 +41,26 @@ export default function Tarjeta({
   const neutro = !delta || delta.valor === 0;
 
   const colorDelta = neutro
-    ? 'text-gray-400'
+    ? 'text-tinta-tenue'
     : (sube && subeEsBueno) || (baja && !subeEsBueno)
-      ? 'text-green-600'
-      : 'text-red-500';
+      ? 'text-verde'
+      : 'text-rojo';
 
   return (
-    <div className={`bg-white rounded-xl shadow p-4 ${destacado ? 'ring-2 ring-indigo-200' : ''}`}>
-      <p className="text-xs text-gray-500 mb-1">{etiqueta}</p>
-      <p className={`text-lg sm:text-2xl font-bold break-words ${colorValor ?? 'text-gray-800'}`}>
+    <div className={`panel p-4 ${destacado ? 'border-marca' : ''}`}>
+      <p className="text-[11px] uppercase tracking-wider text-tinta-suave mb-1.5">{etiqueta}</p>
+      <p
+        className={`font-display text-2xl sm:text-3xl leading-none break-words tabular ${
+          colorValor ?? 'text-tinta'
+        }`}
+      >
         {valor}
       </p>
-      {detalle && <p className="text-xs text-gray-400 mt-0.5 break-words">{detalle}</p>}
+      {detalle && <p className="text-xs text-tinta-tenue mt-0.5 break-words">{detalle}</p>}
       {delta && (
         <p className={`text-xs mt-1 ${colorDelta}`}>
           {neutro ? '=' : sube ? '▲' : '▼'} {delta.texto}
-          <span className="text-gray-400"> {delta.contra}</span>
+          <span className="text-tinta-tenue"> {delta.contra}</span>
         </p>
       )}
     </div>

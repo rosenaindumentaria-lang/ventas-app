@@ -11,15 +11,24 @@ export interface MesDato {
   cantidad: number;
 }
 
-// Marcas del grafico. Validadas con el script de la guia de visualizacion:
-// CVD ΔE 23.1 y vision normal 24.0 sobre blanco, muy por encima del piso.
-// El aqua queda por debajo de 3:1 contra el blanco, asi que el grafico SIEMPRE
-// muestra el total sobre cada columna y ofrece la vista de tabla: el color
-// nunca es el unico canal para leer un valor.
-const COLOR_COSTO = '#2a78d6';
-const COLOR_GANANCIA = '#1baf7a';
-const COLOR_GRID = '#e1e0d9';
-const COLOR_EJE = '#c3c2b7';
+// Marcas del grafico. Al pasar la app a la paleta calida hubo que reelegirlas:
+// el par obvio (terracota + verde) se cae en protanopia, ΔE 14.5, o sea que
+// medio grafico deja de leerse. Se volvio a correr la verificacion (simulacion
+// Vienot 1999, ΔE CIE76 en Lab) sobre los candidatos y este par es el que pasa:
+//
+//   vision normal  ΔE 47.3   deuteranopia ΔE 77.1   protanopia ΔE 63.6
+//   contraste contra el panel: costo 6.9:1, ganancia 5.7:1
+//
+// Ademas mejora lo de antes: el aqua viejo quedaba en 2.7:1, por debajo del
+// piso de 3:1. Aun asi el grafico SIEMPRE muestra el total sobre cada columna y
+// ofrece la vista de tabla: el color nunca es el unico canal para leer un valor.
+//
+// La ganancia usa exactamente --color-verde, el token semantico de "entra
+// plata", para que el grafico diga lo mismo que el resto de la app.
+const COLOR_COSTO = '#35597f';
+const COLOR_GANANCIA = '#4a6b45';
+const COLOR_GRID = '#e8e1d5';
+const COLOR_EJE = '#dcd4c6';
 
 const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -67,9 +76,9 @@ export default function GraficoMensual({
 
   if (datos.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Evolución mensual</h2>
-        <p className="text-gray-400 text-sm text-center py-8">Todavía no hay ventas registradas</p>
+      <div className="panel p-5">
+        <h2 className="font-display text-lg font-normal text-tinta mb-4">Evolución mensual</h2>
+        <p className="text-tinta-tenue text-sm text-center py-8">Todavía no hay ventas registradas</p>
       </div>
     );
   }
@@ -94,24 +103,24 @@ export default function GraficoMensual({
   const dato = datos.find((d) => d.ym === activo);
 
   return (
-    <div className="bg-white rounded-xl shadow p-5">
+    <div className="panel p-5">
       <div className="flex items-start justify-between gap-3 mb-1">
         <div>
-          <h2 className="text-sm font-semibold text-gray-700">Evolución mensual</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h2 className="font-display text-lg font-normal text-tinta">Evolución mensual</h2>
+          <p className="text-xs text-tinta-tenue mt-0.5">
             Tocá un mes para ver su detalle abajo
           </p>
         </div>
         <button
           onClick={() => setVerTabla((v) => !v)}
-          className="text-xs text-indigo-600 hover:underline shrink-0"
+          className="text-xs text-marca hover:underline shrink-0"
         >
           {verTabla ? 'Ver gráfico' : 'Ver tabla'}
         </button>
       </div>
 
       {/* Leyenda: identidad nunca depende solo del color */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-3">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-tinta-suave mb-3">
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_GANANCIA }} />
           Ganancia
@@ -120,13 +129,13 @@ export default function GraficoMensual({
           <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_COSTO }} />
           Costo
         </span>
-        <span className="text-gray-400">· la columna entera es el total vendido</span>
+        <span className="text-tinta-tenue">· la columna entera es el total vendido</span>
       </div>
 
       {verTabla ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm tabular-nums">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+            <thead className="bg-panel-2 text-tinta-suave uppercase text-[11px] tracking-wider">
               <tr>
                 <th className="px-3 py-2 text-left">Mes</th>
                 <th className="px-3 py-2 text-center">Ventas</th>
@@ -135,7 +144,7 @@ export default function GraficoMensual({
                 <th className="px-3 py-2 text-right">Ganancia</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-borde-suave">
               {datos
                 .slice()
                 .reverse()
@@ -145,15 +154,15 @@ export default function GraficoMensual({
                     <tr
                       key={d.ym}
                       onClick={() => onSeleccionarMes(d.ym)}
-                      className={`cursor-pointer hover:bg-indigo-50 ${
-                        d.ym === mesSeleccionado ? 'bg-indigo-50' : ''
+                      className={`cursor-pointer hover:bg-marca-suave ${
+                        d.ym === mesSeleccionado ? 'bg-marca-suave' : ''
                       }`}
                     >
-                      <td className="px-3 py-2 font-medium text-gray-800">{`${mes} ${anio}`}</td>
-                      <td className="px-3 py-2 text-center text-gray-500">{d.cantidad}</td>
-                      <td className="px-3 py-2 text-right font-semibold text-gray-800">{formatPrecio(d.total)}</td>
-                      <td className="px-3 py-2 text-right text-gray-500">{formatPrecio(d.costo)}</td>
-                      <td className="px-3 py-2 text-right text-green-700">{formatPrecio(d.ganancia)}</td>
+                      <td className="px-3 py-2 font-medium text-tinta">{`${mes} ${anio}`}</td>
+                      <td className="px-3 py-2 text-center text-tinta-suave">{d.cantidad}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-tinta">{formatPrecio(d.total)}</td>
+                      <td className="px-3 py-2 text-right text-tinta-suave">{formatPrecio(d.costo)}</td>
+                      <td className="px-3 py-2 text-right text-verde">{formatPrecio(d.ganancia)}</td>
                     </tr>
                   );
                 })}
@@ -194,7 +203,7 @@ export default function GraficoMensual({
                     x={padIzq - 8}
                     y={y(t) + 4}
                     textAnchor="end"
-                    className="fill-gray-400"
+                    className="fill-tinta-tenue"
                     style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}
                   >
                     {compacto(t)}
@@ -236,7 +245,7 @@ export default function GraficoMensual({
                       y={padArriba}
                       width={banda}
                       height={alturaPlot}
-                      fill={seleccionado ? '#eef2ff' : activo === d.ym ? '#f7f7f6' : 'transparent'}
+                      fill={seleccionado ? '#ece4d8' : activo === d.ym ? '#f5f1e9' : 'transparent'}
                     />
 
                     {/* Si no hay ganancia, la punta del dato es el tramo de costo y
@@ -260,7 +269,7 @@ export default function GraficoMensual({
                       x={xBanda + banda / 2}
                       y={yGanancia - 8}
                       textAnchor="middle"
-                      className={seleccionado ? 'fill-gray-800' : 'fill-gray-500'}
+                      className={seleccionado ? 'fill-tinta' : 'fill-tinta-suave'}
                       style={{ fontSize: 10, fontWeight: seleccionado ? 700 : 500 }}
                     >
                       {compacto(d.total)}
@@ -270,7 +279,7 @@ export default function GraficoMensual({
                       x={xBanda + banda / 2}
                       y={alto - padAbajo + 18}
                       textAnchor="middle"
-                      className={seleccionado ? 'fill-gray-800' : 'fill-gray-500'}
+                      className={seleccionado ? 'fill-tinta' : 'fill-tinta-suave'}
                       style={{ fontSize: 11, fontWeight: seleccionado ? 700 : 400 }}
                     >
                       {mes}
@@ -279,7 +288,7 @@ export default function GraficoMensual({
                       x={xBanda + banda / 2}
                       y={alto - padAbajo + 30}
                       textAnchor="middle"
-                      className="fill-gray-400"
+                      className="fill-tinta-tenue"
                       style={{ fontSize: 9 }}
                     >
                       {anio}
@@ -295,19 +304,19 @@ export default function GraficoMensual({
               etiqueta, y la pagina no salta al pasar el mouse. Enriquece, no
               habilita: los totales ya estan sobre cada columna y el detalle
               completo esta en la vista de tabla. */}
-          <div className="mt-2 h-9 border-t border-gray-100 pt-2 text-xs">
+          <div className="mt-2 h-9 border-t border-borde-suave pt-2 text-xs">
             {dato ? (
-              <p className="text-gray-600">
-                <span className="font-semibold text-gray-800">
+              <p className="text-tinta-media">
+                <span className="font-semibold text-tinta">
                   {etiquetaMes(dato.ym).mes} 20{etiquetaMes(dato.ym).anio}
                 </span>{' '}
                 · {dato.cantidad} {dato.cantidad === 1 ? 'venta' : 'ventas'} · Total{' '}
-                <span className="font-medium text-gray-800">{formatPrecio(dato.total)}</span> · Costo{' '}
+                <span className="font-medium text-tinta">{formatPrecio(dato.total)}</span> · Costo{' '}
                 {formatPrecio(dato.costo)} · Ganancia{' '}
-                <span className="font-medium text-green-700">{formatPrecio(dato.ganancia)}</span>
+                <span className="font-medium text-verde">{formatPrecio(dato.ganancia)}</span>
               </p>
             ) : (
-              <p className="text-gray-400">Pasá el mouse o tocá una columna para ver el detalle</p>
+              <p className="text-tinta-tenue">Pasá el mouse o tocá una columna para ver el detalle</p>
             )}
           </div>
         </div>

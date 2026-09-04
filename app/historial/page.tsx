@@ -93,7 +93,7 @@ export default function Historial() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Historial de Ventas</h1>
+      <h1 className="font-display text-3xl font-normal text-tinta mb-6">Historial de Ventas</h1>
 
       <Filtros
         desde={fechaDesde}
@@ -114,37 +114,37 @@ export default function Historial() {
 
       {/* Resumen */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow p-3 sm:p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Ventas</p>
-          <p className="text-lg sm:text-2xl font-bold text-gray-800">{ventasFiltradas.length}</p>
+        <div className="panel p-3 sm:p-4 text-center">
+          <p className="text-xs text-tinta-suave mb-1">Ventas</p>
+          <p className="text-lg sm:font-display text-3xl font-normal text-tinta">{ventasFiltradas.length}</p>
         </div>
-        <div className="bg-white rounded-xl shadow p-3 sm:p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Total vendido</p>
-          <p className="text-lg sm:text-2xl font-bold text-indigo-700 break-words">{formatPrecio(totalFiltrado)}</p>
+        <div className="panel p-3 sm:p-4 text-center">
+          <p className="text-xs text-tinta-suave mb-1">Total vendido</p>
+          <p className="text-lg sm:text-2xl font-bold text-marca break-words">{formatPrecio(totalFiltrado)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow p-3 sm:p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Ganancia</p>
-          <p className="text-lg sm:text-2xl font-bold text-green-600 break-words">{formatPrecio(gananciaFiltrada)}</p>
+        <div className="panel p-3 sm:p-4 text-center">
+          <p className="text-xs text-tinta-suave mb-1">Ganancia</p>
+          <p className="text-lg sm:text-2xl font-bold text-verde break-words">{formatPrecio(gananciaFiltrada)}</p>
         </div>
       </div>
 
       {errorEdicion && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+        <div className="mb-4 bg-rojo-suave border border-rojo text-rojo-fuerte text-sm rounded-panel px-4 py-3">
           ❌ Error al guardar: {errorEdicion}
         </div>
       )}
 
       {/* Tabla */}
       {loading ? (
-        <p className="text-gray-500">Cargando ventas...</p>
+        <p className="text-tinta-suave">Cargando ventas...</p>
       ) : ventasFiltradas.length === 0 ? (
-        <p className="text-gray-400 text-center py-12">No hay ventas registradas con esos filtros.</p>
+        <p className="text-tinta-tenue text-center py-12">No hay ventas registradas con esos filtros.</p>
       ) : (
         <>
         {/* Tabla (escritorio) */}
-        <div className="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
+        <div className="hidden md:block panel overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+            <thead className="bg-panel-2 text-tinta-suave uppercase text-[11px] tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left">Origen</th>
                 <th className="px-4 py-3 text-left">Fecha</th>
@@ -159,25 +159,25 @@ export default function Historial() {
                 <th className="px-4 py-3 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-borde-suave">
               {ventasFiltradas.map((v) => (
-                <tr key={v.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-500">{v.origen}</td>
-                  <td className="px-4 py-3 text-gray-500">
+                <tr key={v.id} className="hover:bg-panel-2">
+                  <td className="px-4 py-3 text-tinta-suave">{v.origen}</td>
+                  <td className="px-4 py-3 text-tinta-suave">
                     {editandoId === v.id ? (
                       <input
                         type="date"
                         value={nuevaFecha}
                         onChange={(e) => setNuevaFecha(e.target.value)}
-                        className="border border-indigo-300 rounded px-2 py-1 text-sm"
+                        className="border border-marca rounded px-2 py-1 text-sm"
                       />
                     ) : (
                       v.fecha
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{v.usuario || '—'}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{v.nombreComercial}</td>
-                  <td className="px-4 py-3 text-gray-500">{v.cod}</td>
+                  <td className="px-4 py-3 text-tinta-suave">{v.usuario || '—'}</td>
+                  <td className="px-4 py-3 font-medium text-tinta">{v.nombreComercial}</td>
+                  <td className="px-4 py-3 text-tinta-suave">{v.cod}</td>
                   <td className="px-4 py-3 text-center">
                     {editandoId === v.id ? (
                       <input
@@ -185,33 +185,33 @@ export default function Historial() {
                         min={1}
                         value={nuevaCantidad}
                         onChange={(e) => setNuevaCantidad(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-16 border border-indigo-300 rounded px-2 py-1 text-center"
+                        className="w-16 border border-marca rounded px-2 py-1 text-center"
                       />
                     ) : (
                       v.cantidad
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className="bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium">
+                    <span className="bg-marca-suave text-marca px-2 py-0.5 text-[11px] font-medium tracking-wider">
                       {v.tipoPrecio}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">{formatPrecio(v.precioUnitario)}</td>
                   <td className="px-4 py-3 text-right font-semibold">{formatPrecio(v.total)}</td>
-                  <td className="px-4 py-3 text-right text-green-600">{formatPrecio(v.ganancia)}</td>
+                  <td className="px-4 py-3 text-right text-verde">{formatPrecio(v.ganancia)}</td>
                   <td className="px-4 py-3 text-center whitespace-nowrap">
                     {editandoId === v.id ? (
                       <>
                         <button
                           onClick={() => guardarEdicion(v.id)}
                           disabled={procesando}
-                          className="text-green-600 hover:text-green-800 font-medium mr-2 disabled:opacity-50"
+                          className="text-verde hover:text-verde-fuerte font-medium mr-2 disabled:opacity-50"
                         >
                           Guardar
                         </button>
                         <button
                           onClick={() => setEditandoId(null)}
-                          className="text-gray-400 hover:text-gray-600"
+                          className="text-tinta-tenue hover:text-tinta-media"
                         >
                           Cancelar
                         </button>
@@ -221,7 +221,7 @@ export default function Historial() {
                         <button
                           onClick={() => empezarEdicion(v)}
                           disabled={procesando}
-                          className="text-indigo-600 hover:text-indigo-800 mr-3 disabled:opacity-50"
+                          className="text-marca hover:text-marca-fuerte mr-3 disabled:opacity-50"
                           title="Editar cantidad"
                         >
                           ✏️
@@ -229,7 +229,7 @@ export default function Historial() {
                         <button
                           onClick={() => borrarVenta(v.id)}
                           disabled={procesando}
-                          className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                          className="text-rojo hover:text-rojo-fuerte disabled:opacity-50"
                           title="Borrar venta"
                         >
                           🗑️
@@ -246,68 +246,68 @@ export default function Historial() {
         {/* Tarjetas (mobile) */}
         <div className="md:hidden space-y-3">
           {ventasFiltradas.map((v) => (
-            <div key={v.id} className="bg-white rounded-xl shadow p-4">
+            <div key={v.id} className="panel p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-800 break-words">{v.nombreComercial}</p>
-                  <div className="text-xs text-gray-400 mt-0.5">
+                  <p className="font-semibold text-tinta break-words">{v.nombreComercial}</p>
+                  <div className="text-xs text-tinta-tenue mt-0.5">
                     {editandoId === v.id ? (
                       <input
                         type="date"
                         value={nuevaFecha}
                         onChange={(e) => setNuevaFecha(e.target.value)}
-                        className="border border-indigo-300 rounded px-2 py-1 text-sm text-gray-700"
+                        className="border border-marca rounded px-2 py-1 text-sm text-tinta-media"
                       />
                     ) : (
                       <span>{v.fecha}{v.cod && ` · ${v.cod}`}{v.origen && ` · ${v.origen}`}</span>
                     )}
                   </div>
                 </div>
-                <span className="bg-indigo-100 text-indigo-700 rounded-full px-2 py-0.5 text-xs font-medium shrink-0">
+                <span className="bg-marca-suave text-marca px-2 py-0.5 text-[11px] font-medium tracking-wider shrink-0">
                   {v.tipoPrecio}
                 </span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                 <div>
-                  <p className="text-xs text-gray-400">Cant.</p>
+                  <p className="text-xs text-tinta-tenue">Cant.</p>
                   {editandoId === v.id ? (
                     <input
                       type="number"
                       min={1}
                       value={nuevaCantidad}
                       onChange={(e) => setNuevaCantidad(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-16 border border-indigo-300 rounded px-2 py-1 text-center"
+                      className="w-16 border border-marca rounded px-2 py-1 text-center"
                     />
                   ) : (
-                    <p className="font-medium text-gray-700">
-                      {v.cantidad} <span className="text-gray-400">× {formatPrecio(v.precioUnitario)}</span>
+                    <p className="font-medium text-tinta-media">
+                      {v.cantidad} <span className="text-tinta-tenue">× {formatPrecio(v.precioUnitario)}</span>
                     </p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Total</p>
-                  <p className="font-semibold text-gray-800">{formatPrecio(v.total)}</p>
+                  <p className="text-xs text-tinta-tenue">Total</p>
+                  <p className="font-semibold text-tinta">{formatPrecio(v.total)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Ganancia</p>
-                  <p className="font-medium text-green-600">{formatPrecio(v.ganancia)}</p>
+                  <p className="text-xs text-tinta-tenue">Ganancia</p>
+                  <p className="font-medium text-verde">{formatPrecio(v.ganancia)}</p>
                 </div>
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xs text-gray-400">{v.usuario || '—'}</span>
+              <div className="mt-3 pt-3 border-t border-borde-suave flex items-center justify-between">
+                <span className="text-xs text-tinta-tenue">{v.usuario || '—'}</span>
                 <div className="flex items-center gap-4">
                   {editandoId === v.id ? (
                     <>
                       <button
                         onClick={() => guardarEdicion(v.id)}
                         disabled={procesando}
-                        className="text-green-600 font-medium text-sm disabled:opacity-50"
+                        className="text-verde font-medium text-sm disabled:opacity-50"
                       >
                         {procesando ? 'Guardando...' : 'Guardar'}
                       </button>
-                      <button onClick={() => setEditandoId(null)} className="text-gray-400 text-sm">
+                      <button onClick={() => setEditandoId(null)} className="text-tinta-tenue text-sm">
                         Cancelar
                       </button>
                     </>
@@ -316,14 +316,14 @@ export default function Historial() {
                       <button
                         onClick={() => empezarEdicion(v)}
                         disabled={procesando}
-                        className="text-indigo-600 text-sm disabled:opacity-50"
+                        className="text-marca text-sm disabled:opacity-50"
                       >
                         ✏️ Editar
                       </button>
                       <button
                         onClick={() => borrarVenta(v.id)}
                         disabled={procesando}
-                        className="text-red-500 text-sm disabled:opacity-50"
+                        className="text-rojo text-sm disabled:opacity-50"
                       >
                         🗑️ Borrar
                       </button>

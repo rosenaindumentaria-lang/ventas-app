@@ -195,33 +195,33 @@ export default function Movimientos() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-2">Movimientos de caja</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <h1 className="font-display text-3xl font-normal text-tinta mb-2">Movimientos de caja</h1>
+      <p className="text-sm text-tinta-suave mb-6">
         Plata que entra o sale sin ser una venta ni un gasto: préstamos, aportes, devoluciones,
         retiros. Mueven el saldo de caja pero no cuentan como ganancia ni como gasto del negocio.
       </p>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Formulario */}
-        <div className={`bg-white rounded-xl shadow p-6 space-y-4 h-fit ${editandoId ? 'ring-2 ring-indigo-300' : ''}`}>
+        <div className={`panel p-6 space-y-4 h-fit ${editandoId ? 'ring-2 ring-marca' : ''}`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">
+            <h2 className="font-display text-lg font-normal text-tinta">
               {editandoId ? 'Editar movimiento' : 'Registrar movimiento'}
             </h2>
             {editandoId && (
-              <button type="button" onClick={cancelarEdicion} className="text-xs text-indigo-600 hover:underline">
+              <button type="button" onClick={cancelarEdicion} className="text-xs text-marca hover:underline">
                 Cancelar
               </button>
             )}
           </div>
 
           {/* Entra o sale */}
-          <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-panel bg-marca-suave p-1">
             <button
               type="button"
               onClick={() => cambiarSentido('entrada')}
-              className={`rounded-md py-2 text-sm font-semibold transition-colors ${
-                sentido === 'entrada' ? 'bg-emerald-500 text-white' : 'text-gray-600 hover:bg-gray-200'
+              className={`rounded-panel py-2 text-sm font-semibold transition-colors ${
+                sentido === 'entrada' ? 'bg-verde text-white' : 'text-tinta-media hover:bg-acento-suave'
               }`}
             >
               ↓ Entra plata
@@ -229,8 +229,8 @@ export default function Movimientos() {
             <button
               type="button"
               onClick={() => cambiarSentido('salida')}
-              className={`rounded-md py-2 text-sm font-semibold transition-colors ${
-                sentido === 'salida' ? 'bg-amber-500 text-white' : 'text-gray-600 hover:bg-gray-200'
+              className={`rounded-panel py-2 text-sm font-semibold transition-colors ${
+                sentido === 'salida' ? 'bg-ocre text-white' : 'text-tinta-media hover:bg-acento-suave'
               }`}
             >
               ↑ Sale plata
@@ -238,7 +238,7 @@ export default function Movimientos() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Detalle</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Detalle</label>
             <input
               type="text"
               value={detalle}
@@ -248,24 +248,24 @@ export default function Movimientos() {
                   ? 'Ej: Préstamo del banco, plata que puse yo...'
                   : 'Ej: Cuota 3 del préstamo del banco...'
               }
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Tipo</label>
             <div className="flex flex-wrap gap-2">
               {tipos.map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setTipo(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-panel text-xs font-medium transition-colors ${
                     tipo === t
                       ? sentido === 'entrada'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-amber-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-verde text-white'
+                        : 'bg-ocre text-white'
+                      : 'bg-marca-suave text-tinta-media hover:bg-acento-suave'
                   }`}
                 >
                   {t}
@@ -275,30 +275,30 @@ export default function Movimientos() {
           </div>
 
           {AYUDA_TIPO[tipo] && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="rounded-panel border border-ocre bg-ocre-suave px-3 py-2 text-xs text-ocre-fuerte">
               {AYUDA_TIPO[tipo]}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+              <label className="block text-sm font-medium text-tinta-media mb-1">Monto</label>
               <input
                 type="number"
                 min={0}
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
                 placeholder="0"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+              <label className="block text-sm font-medium text-tinta-media mb-1">Fecha</label>
               <input
                 type="date"
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-verde"
               />
             </div>
           </div>
@@ -306,10 +306,10 @@ export default function Movimientos() {
           <button
             onClick={guardar}
             disabled={!detalle.trim() || !monto || guardando}
-            className={`w-full disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors ${
+            className={`w-full disabled:opacity-50 text-white font-semibold py-2.5 rounded-panel transition-colors ${
               sentido === 'entrada'
-                ? 'bg-emerald-500 hover:bg-emerald-600'
-                : 'bg-amber-500 hover:bg-amber-600'
+                ? 'bg-verde hover:bg-verde-fuerte'
+                : 'bg-ocre hover:bg-ocre-fuerte'
             }`}
           >
             {guardando
@@ -324,7 +324,7 @@ export default function Movimientos() {
           {mensaje && (
             <p
               className={`text-sm text-center font-medium ${
-                mensaje.tipo === 'ok' ? 'text-green-600' : 'text-red-600'
+                mensaje.tipo === 'ok' ? 'text-verde' : 'text-rojo'
               }`}
             >
               {mensaje.texto}
@@ -333,16 +333,16 @@ export default function Movimientos() {
 
           <div className="border-t pt-3 space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Entradas</span>
-              <span className="font-medium text-emerald-600">{formatPrecio(totalEntradas)}</span>
+              <span className="text-tinta-suave">Entradas</span>
+              <span className="font-medium text-verde">{formatPrecio(totalEntradas)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Salidas</span>
-              <span className="font-medium text-amber-600">{formatPrecio(totalSalidas)}</span>
+              <span className="text-tinta-suave">Salidas</span>
+              <span className="font-medium text-ocre">{formatPrecio(totalSalidas)}</span>
             </div>
             <div className="flex justify-between border-t pt-1.5">
-              <span className="text-gray-500">Neto en caja</span>
-              <span className={`font-bold ${neto >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <span className="text-tinta-suave">Neto en caja</span>
+              <span className={`font-bold ${neto >= 0 ? 'text-verde' : 'text-ocre'}`}>
                 {formatPrecio(neto)}
               </span>
             </div>
@@ -371,45 +371,45 @@ export default function Movimientos() {
             hayFiltros={hayFiltros}
           />
 
-          <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="panel overflow-hidden">
           <div className="px-5 py-4 border-b flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold text-gray-700">
+            <h2 className="font-display text-lg font-normal text-tinta">
               {hayFiltros ? 'Movimientos filtrados' : 'Últimos movimientos'}
-              <span className="ml-2 font-normal text-gray-400">({movsFiltrados.length})</span>
+              <span className="ml-2 font-normal text-tinta-tenue">({movsFiltrados.length})</span>
             </h2>
-            <span className={`text-sm font-bold shrink-0 ${neto >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+            <span className={`text-sm font-bold shrink-0 ${neto >= 0 ? 'text-verde' : 'text-ocre'}`}>
               {formatPrecio(neto)}
             </span>
           </div>
           {loading ? (
-            <p className="text-gray-400 text-sm text-center py-8">Cargando...</p>
+            <p className="text-tinta-tenue text-sm text-center py-8">Cargando...</p>
           ) : movsFiltrados.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">
+            <p className="text-tinta-tenue text-sm text-center py-8">
               {hayFiltros
                 ? 'Ningún movimiento coincide con esos filtros'
                 : 'No hay movimientos registrados'}
             </p>
           ) : (
-            <ul className="divide-y divide-gray-100 max-h-[520px] overflow-y-auto">
+            <ul className="divide-y divide-borde-suave max-h-[520px] overflow-y-auto">
               {movsFiltrados.map((m) => {
                 const entra = m.monto > 0;
                 return (
                   <li
                     key={m.id}
                     className={`px-5 py-3 flex items-center justify-between gap-3 ${
-                      editandoId === m.id ? 'bg-indigo-50' : ''
+                      editandoId === m.id ? 'bg-marca-suave' : ''
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{m.detalle}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-sm font-medium text-tinta truncate">{m.detalle}</p>
+                      <p className="text-xs text-tinta-tenue">
                         {m.fecha.slice(5).replace('-', '/')} · {m.tipo}
                         {m.usuario && ` · ${m.usuario}`}
                       </p>
                     </div>
                     <span
                       className={`font-semibold text-sm shrink-0 ${
-                        entra ? 'text-emerald-600' : 'text-amber-600'
+                        entra ? 'text-verde' : 'text-ocre'
                       }`}
                     >
                       {entra ? '+' : '−'} {formatPrecio(Math.abs(m.monto))}
@@ -417,7 +417,7 @@ export default function Movimientos() {
                     <button
                       onClick={() => empezarEdicion(m)}
                       disabled={procesando}
-                      className="text-gray-300 hover:text-indigo-500 transition-colors disabled:opacity-50 shrink-0"
+                      className="text-tinta-tenue hover:text-marca-fuerte transition-colors disabled:opacity-50 shrink-0"
                       title="Editar"
                     >
                       ✏️
@@ -425,7 +425,7 @@ export default function Movimientos() {
                     <button
                       onClick={() => borrar(m.id)}
                       disabled={procesando}
-                      className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50 shrink-0"
+                      className="text-tinta-tenue hover:text-rojo transition-colors disabled:opacity-50 shrink-0"
                       title="Borrar"
                     >
                       🗑️

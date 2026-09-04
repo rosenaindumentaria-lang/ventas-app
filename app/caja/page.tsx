@@ -14,10 +14,10 @@ type Linea = {
 
 // Color y signo de cada tipo de línea en el timeline de movimientos.
 const ESTILO_LINEA: Record<Linea['tipo'], { punto: string; texto: string; signo: string }> = {
-  venta: { punto: 'bg-indigo-400', texto: 'text-indigo-600', signo: '+' },
-  entrada: { punto: 'bg-emerald-400', texto: 'text-emerald-600', signo: '+' },
-  salida: { punto: 'bg-amber-400', texto: 'text-amber-600', signo: '−' },
-  gasto: { punto: 'bg-rose-400', texto: 'text-rose-600', signo: '−' },
+  venta: { punto: 'bg-acento-claro', texto: 'text-marca', signo: '+' },
+  entrada: { punto: 'bg-verde', texto: 'text-verde', signo: '+' },
+  salida: { punto: 'bg-ocre', texto: 'text-ocre', signo: '−' },
+  gasto: { punto: 'bg-rojo', texto: 'text-rojo', signo: '−' },
 };
 
 const NOMBRES_MES = [
@@ -154,29 +154,29 @@ export default function Caja() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Caja de Rosena</h1>
+      <h1 className="font-display text-3xl font-normal text-tinta mb-6">Caja de Rosena</h1>
 
       {loading ? (
-        <p className="text-gray-500">Cargando...</p>
+        <p className="text-tinta-suave">Cargando...</p>
       ) : (
         <>
           {/* Saldo acumulado: la caja real */}
-          <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl shadow-lg p-6 mb-6 text-white">
-            <p className="text-sm text-indigo-200 mb-1">💰 Saldo acumulado en caja</p>
+          <div className="bg-gradient-to-br from-marca to-marca-fuerte rounded-panel p-6 mb-6 text-white">
+            <p className="text-sm text-marca-suave mb-1">💰 Saldo acumulado en caja</p>
             <p className="text-3xl sm:text-4xl font-bold break-words">{formatPrecio(saldoCaja)}</p>
             <div className="flex flex-wrap gap-x-8 gap-y-2 mt-4 text-sm">
-              <span className="text-indigo-100">
+              <span className="text-marca-suave">
                 Ventas históricas: <strong className="text-white">{formatPrecio(totalVentasHist)}</strong>
               </span>
               {hayMovs && (
-                <span className="text-indigo-100">
+                <span className="text-marca-suave">
                   Otros movimientos: <strong className="text-white">{formatPrecio(netoMovsHist)}</strong>
                 </span>
               )}
-              <span className="text-indigo-100">
+              <span className="text-marca-suave">
                 Gastos históricos: <strong className="text-white">{formatPrecio(totalGastosHist)}</strong>
               </span>
-              <span className="text-indigo-100">
+              <span className="text-marca-suave">
                 Resultado neto (ganancia − gastos):{' '}
                 <strong className="text-white">{formatPrecio(resultadoNetoHist)}</strong>
               </span>
@@ -184,15 +184,15 @@ export default function Caja() {
           </div>
 
           {/* Filtro por mes + totales del período */}
-          <div className="bg-white rounded-xl shadow p-5 mb-6">
+          <div className="panel p-5 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-sm font-semibold text-gray-700">
+              <h2 className="font-display text-lg font-normal text-tinta">
                 {mes ? `Resumen de ${nombreMes(mes)}` : 'Resumen de todos los meses'}
               </h2>
               <select
                 value={mes}
                 onChange={(e) => setMes(e.target.value)}
-                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                className="w-full sm:w-auto border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca"
               >
                 <option value="">Todos los meses</option>
                 {evolucion
@@ -207,24 +207,24 @@ export default function Caja() {
             </div>
             <div className={`grid gap-2 sm:gap-4 ${hayMovs ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
               <div className="text-center">
-                <p className="text-xs text-gray-500 mb-1">Ventas</p>
-                <p className="text-base sm:text-xl font-bold text-indigo-700 break-words">{formatPrecio(ventasFiltradasTotal)}</p>
+                <p className="text-xs text-tinta-suave mb-1">Ventas</p>
+                <p className="text-base sm:text-xl font-bold text-marca break-words">{formatPrecio(ventasFiltradasTotal)}</p>
               </div>
               {hayMovs && (
                 <div className="text-center">
-                  <p className="text-xs text-gray-500 mb-1">Otros movimientos</p>
-                  <p className={`text-base sm:text-xl font-bold break-words ${movsFiltradosTotal >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <p className="text-xs text-tinta-suave mb-1">Otros movimientos</p>
+                  <p className={`text-base sm:text-xl font-bold break-words ${movsFiltradosTotal >= 0 ? 'text-verde' : 'text-ocre'}`}>
                     {formatPrecio(movsFiltradosTotal)}
                   </p>
                 </div>
               )}
               <div className="text-center">
-                <p className="text-xs text-gray-500 mb-1">Gastos</p>
-                <p className="text-base sm:text-xl font-bold text-rose-600 break-words">{formatPrecio(gastosFiltradosTotal)}</p>
+                <p className="text-xs text-tinta-suave mb-1">Gastos</p>
+                <p className="text-base sm:text-xl font-bold text-rojo break-words">{formatPrecio(gastosFiltradosTotal)}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-500 mb-1">Resultado</p>
-                <p className={`text-base sm:text-xl font-bold break-words ${resultadoFiltrado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className="text-xs text-tinta-suave mb-1">Resultado</p>
+                <p className={`text-base sm:text-xl font-bold break-words ${resultadoFiltrado >= 0 ? 'text-verde' : 'text-rojo'}`}>
                   {formatPrecio(resultadoFiltrado)}
                 </p>
               </div>
@@ -232,16 +232,16 @@ export default function Caja() {
           </div>
 
           {/* Evolución mes a mes */}
-          <div className="bg-white rounded-xl shadow mb-6 overflow-hidden">
+          <div className="panel mb-6 overflow-hidden">
             <div className="px-5 py-4 border-b">
-              <h2 className="text-sm font-semibold text-gray-700">Evolución mes a mes</h2>
+              <h2 className="font-display text-lg font-normal text-tinta">Evolución mes a mes</h2>
             </div>
             {evolucion.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-8">Sin movimientos registrados</p>
+              <p className="text-tinta-tenue text-sm text-center py-8">Sin movimientos registrados</p>
             ) : (
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                  <thead className="bg-panel-2 text-tinta-suave uppercase text-[11px] tracking-wider">
                     <tr>
                       <th className="px-5 py-3 text-left">Mes</th>
                       <th className="px-5 py-3 text-right">Ventas</th>
@@ -251,29 +251,29 @@ export default function Caja() {
                       <th className="px-5 py-3 text-right">Saldo acumulado</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-borde-suave">
                     {evolucion.map((e) => {
                       const resultadoMes = e.ventas + e.movs - e.gastos;
                       return (
                         <tr
                           key={e.ym}
                           onClick={() => setMes(mes === e.ym ? '' : e.ym)}
-                          className={`cursor-pointer hover:bg-indigo-50 transition-colors ${
-                            mes === e.ym ? 'bg-indigo-50' : ''
+                          className={`cursor-pointer hover:bg-marca-suave transition-colors ${
+                            mes === e.ym ? 'bg-marca-suave' : ''
                           }`}
                         >
-                          <td className="px-5 py-3 font-medium text-gray-800">{nombreMes(e.ym)}</td>
-                          <td className="px-5 py-3 text-right text-indigo-600">{formatPrecio(e.ventas)}</td>
+                          <td className="px-5 py-3 font-medium text-tinta">{nombreMes(e.ym)}</td>
+                          <td className="px-5 py-3 text-right text-marca">{formatPrecio(e.ventas)}</td>
                           {hayMovs && (
-                            <td className={`px-5 py-3 text-right ${e.movs >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                            <td className={`px-5 py-3 text-right ${e.movs >= 0 ? 'text-verde' : 'text-ocre'}`}>
                               {e.movs === 0 ? '—' : formatPrecio(e.movs)}
                             </td>
                           )}
-                          <td className="px-5 py-3 text-right text-rose-600">{formatPrecio(e.gastos)}</td>
-                          <td className={`px-5 py-3 text-right font-medium ${resultadoMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <td className="px-5 py-3 text-right text-rojo">{formatPrecio(e.gastos)}</td>
+                          <td className={`px-5 py-3 text-right font-medium ${resultadoMes >= 0 ? 'text-verde' : 'text-rojo'}`}>
                             {formatPrecio(resultadoMes)}
                           </td>
-                          <td className={`px-5 py-3 text-right font-bold ${e.saldoAcum >= 0 ? 'text-gray-800' : 'text-red-600'}`}>
+                          <td className={`px-5 py-3 text-right font-bold ${e.saldoAcum >= 0 ? 'text-tinta' : 'text-rojo'}`}>
                             {formatPrecio(e.saldoAcum)}
                           </td>
                         </tr>
@@ -286,7 +286,7 @@ export default function Caja() {
 
             {/* Evolución como tarjetas en mobile (más reciente primero) */}
             {evolucion.length > 0 && (
-              <div className="md:hidden divide-y divide-gray-100">
+              <div className="md:hidden divide-y divide-borde-suave">
                 {evolucion
                   .slice()
                   .reverse()
@@ -296,37 +296,37 @@ export default function Caja() {
                       <button
                         key={e.ym}
                         onClick={() => setMes(mes === e.ym ? '' : e.ym)}
-                        className={`w-full text-left px-4 py-3 ${mes === e.ym ? 'bg-indigo-50' : ''}`}
+                        className={`w-full text-left px-4 py-3 ${mes === e.ym ? 'bg-marca-suave' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-3 mb-2">
-                          <span className="font-medium text-gray-800">{nombreMes(e.ym)}</span>
+                          <span className="font-medium text-tinta">{nombreMes(e.ym)}</span>
                           <span className="text-right">
-                            <span className={`block text-sm font-bold ${e.saldoAcum >= 0 ? 'text-gray-800' : 'text-red-600'}`}>
+                            <span className={`block text-sm font-bold ${e.saldoAcum >= 0 ? 'text-tinta' : 'text-rojo'}`}>
                               {formatPrecio(e.saldoAcum)}
                             </span>
-                            <span className="block text-[10px] text-gray-400">saldo acum.</span>
+                            <span className="block text-[10px] text-tinta-tenue">saldo acum.</span>
                           </span>
                         </div>
                         <div className={`grid gap-2 text-xs ${e.movs !== 0 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                           <div>
-                            <span className="block text-gray-400">Ventas</span>
-                            <span className="font-medium text-indigo-600 break-words">{formatPrecio(e.ventas)}</span>
+                            <span className="block text-tinta-tenue">Ventas</span>
+                            <span className="font-medium text-marca break-words">{formatPrecio(e.ventas)}</span>
                           </div>
                           {e.movs !== 0 && (
                             <div>
-                              <span className="block text-gray-400">Otros movim.</span>
-                              <span className={`font-medium break-words ${e.movs > 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                              <span className="block text-tinta-tenue">Otros movim.</span>
+                              <span className={`font-medium break-words ${e.movs > 0 ? 'text-verde' : 'text-ocre'}`}>
                                 {formatPrecio(e.movs)}
                               </span>
                             </div>
                           )}
                           <div>
-                            <span className="block text-gray-400">Gastos</span>
-                            <span className="font-medium text-rose-600 break-words">{formatPrecio(e.gastos)}</span>
+                            <span className="block text-tinta-tenue">Gastos</span>
+                            <span className="font-medium text-rojo break-words">{formatPrecio(e.gastos)}</span>
                           </div>
                           <div>
-                            <span className="block text-gray-400">Resultado</span>
-                            <span className={`font-medium break-words ${resultadoMes >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <span className="block text-tinta-tenue">Resultado</span>
+                            <span className={`font-medium break-words ${resultadoMes >= 0 ? 'text-verde' : 'text-rojo'}`}>
                               {formatPrecio(resultadoMes)}
                             </span>
                           </div>
@@ -340,11 +340,11 @@ export default function Caja() {
 
           {/* Detalle (filtrable por mes) */}
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">
+            <h2 className="font-display text-lg font-normal text-tinta">
               Detalle {mes ? `· ${nombreMes(mes)}` : '· Todos los movimientos'}
             </h2>
             {mes && (
-              <button onClick={() => setMes('')} className="text-xs text-indigo-600 hover:underline">
+              <button onClick={() => setMes('')} className="text-xs text-marca hover:underline">
                 Ver todo
               </button>
             )}
@@ -352,21 +352,21 @@ export default function Caja() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {/* Gastos por categoría */}
-            <div className="bg-white rounded-xl shadow p-5 h-fit">
-              <h2 className="text-sm font-semibold text-gray-700 mb-4">Gastos por categoría</h2>
+            <div className="panel p-5 h-fit">
+              <h2 className="font-display text-lg font-normal text-tinta mb-4">Gastos por categoría</h2>
               {gastosPorCategoria.length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-6">Sin gastos</p>
+                <p className="text-tinta-tenue text-sm text-center py-6">Sin gastos</p>
               ) : (
                 <div className="space-y-3">
                   {gastosPorCategoria.map(([cat, monto]) => (
                     <div key={cat}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-600">{cat}</span>
-                        <span className="font-medium text-rose-600">{formatPrecio(monto)}</span>
+                        <span className="text-tinta-media">{cat}</span>
+                        <span className="font-medium text-rojo">{formatPrecio(monto)}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="w-full bg-marca-suave h-1.5">
                         <div
-                          className="bg-rose-400 h-2 rounded-full"
+                          className="bg-rojo h-1.5"
                           style={{ width: `${gastosFiltradosTotal > 0 ? (monto / gastosFiltradosTotal) * 100 : 0}%` }}
                         />
                       </div>
@@ -377,38 +377,38 @@ export default function Caja() {
             </div>
 
             {/* Timeline */}
-            <div className="md:col-span-2 bg-white rounded-xl shadow overflow-hidden h-fit">
+            <div className="md:col-span-2 panel overflow-hidden h-fit">
               <div className="px-5 py-4 border-b flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">Movimientos</h2>
-                <div className="flex gap-3 text-xs text-gray-400">
+                <h2 className="font-display text-lg font-normal text-tinta">Movimientos</h2>
+                <div className="flex gap-3 text-xs text-tinta-tenue">
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" /> Venta
+                    <span className="w-2 h-2 rounded-full bg-acento-claro inline-block" /> Venta
                   </span>
                   {hayMovs && (
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Entrada
+                      <span className="w-2 h-2 rounded-full bg-verde inline-block" /> Entrada
                     </span>
                   )}
                   {hayMovs && (
                     <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Salida
+                      <span className="w-2 h-2 rounded-full bg-ocre inline-block" /> Salida
                     </span>
                   )}
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" /> Gasto
+                    <span className="w-2 h-2 rounded-full bg-rojo inline-block" /> Gasto
                   </span>
                 </div>
               </div>
               {lineas.length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-8">Sin movimientos</p>
+                <p className="text-tinta-tenue text-sm text-center py-8">Sin movimientos</p>
               ) : (
-                <ul className="divide-y divide-gray-50 max-h-[480px] overflow-y-auto">
+                <ul className="divide-y divide-borde-suave max-h-[480px] overflow-y-auto">
                   {lineas.map((l, i) => (
                     <li key={i} className="px-5 py-3 flex items-center gap-3">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${ESTILO_LINEA[l.tipo].punto}`} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{l.descripcion}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-sm font-medium text-tinta truncate">{l.descripcion}</p>
+                        <p className="text-xs text-tinta-tenue">
                           {l.fecha.slice(5).replace('-', '/')} · {l.detalle}
                         </p>
                       </div>

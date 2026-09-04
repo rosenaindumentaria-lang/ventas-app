@@ -78,12 +78,12 @@ export default function UsuariosPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Usuarios</h1>
+      <h1 className="font-display text-3xl font-normal text-tinta mb-6">Usuarios</h1>
 
       {mensaje && (
         <p
-          className={`mb-4 text-sm rounded-lg px-3 py-2 ${
-            mensaje.tipo === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          className={`mb-4 text-sm rounded-panel px-3 py-2 ${
+            mensaje.tipo === 'ok' ? 'bg-verde-suave text-verde' : 'bg-rojo-suave text-rojo-fuerte'
           }`}
         >
           {mensaje.texto}
@@ -91,46 +91,46 @@ export default function UsuariosPage() {
       )}
 
       {/* Alta de usuario */}
-      <form onSubmit={crear} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-8">
-        <h2 className="font-semibold text-gray-700 mb-4">Nuevo usuario</h2>
+      <form onSubmit={crear} className="panel p-5 mb-8">
+        <h2 className="font-display text-lg font-normal text-tinta mb-4">Nuevo usuario</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Usuario</label>
             <input
               type="text"
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+              className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Nombre</label>
             <input
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+              className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               placeholder="Mínimo 6 caracteres"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+              className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Rol</label>
             <select
               value={rol}
               onChange={(e) => setRol(e.target.value as RolUsuario)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+              className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none bg-panel"
             >
               <option value="vendedor">Vendedor</option>
               <option value="admin">Administrador</option>
@@ -140,7 +140,7 @@ export default function UsuariosPage() {
         <button
           type="submit"
           disabled={creando}
-          className="mt-4 rounded-lg bg-indigo-600 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="mt-4 rounded-panel bg-marca text-white px-4 py-2 text-sm font-medium hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
         >
           {creando ? 'Creando…' : 'Crear usuario'}
         </button>
@@ -148,13 +148,13 @@ export default function UsuariosPage() {
 
       {/* Lista */}
       {loading ? (
-        <p className="text-gray-500">Cargando…</p>
+        <p className="text-tinta-suave">Cargando…</p>
       ) : usuarios.length === 0 ? (
-        <p className="text-gray-500">No hay usuarios.</p>
+        <p className="text-tinta-suave">No hay usuarios.</p>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="panel overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-panel-2 text-tinta-media">
               <tr>
                 <th className="text-left px-4 py-2 font-medium">Usuario</th>
                 <th className="text-left px-4 py-2 font-medium">Nombre</th>
@@ -163,18 +163,18 @@ export default function UsuariosPage() {
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-borde-suave">
               {usuarios.map((u) => (
                 <tr key={u.usuario}>
-                  <td className="px-4 py-2 font-medium text-gray-800">{u.usuario}</td>
-                  <td className="px-4 py-2 text-gray-600">{u.nombre}</td>
-                  <td className="px-4 py-2 text-gray-600">
+                  <td className="px-4 py-2 font-medium text-tinta">{u.usuario}</td>
+                  <td className="px-4 py-2 text-tinta-media">{u.nombre}</td>
+                  <td className="px-4 py-2 text-tinta-media">
                     {u.rol === 'admin' ? 'Administrador' : 'Vendedor'}
                   </td>
                   <td className="px-4 py-2">
                     <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-xs ${
-                        u.activo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                      className={`inline-block px-2 py-0.5 text-[11px] tracking-wider ${
+                        u.activo ? 'bg-verde-suave text-verde' : 'bg-acento-suave text-tinta-media'
                       }`}
                     >
                       {u.activo ? 'Activo' : 'Inactivo'}
@@ -183,7 +183,7 @@ export default function UsuariosPage() {
                   <td className="px-4 py-2 text-right">
                     <button
                       onClick={() => toggleActivo(u)}
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                      className="text-marca hover:text-marca-fuerte text-sm font-medium"
                     >
                       {u.activo ? 'Desactivar' : 'Activar'}
                     </button>

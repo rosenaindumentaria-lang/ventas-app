@@ -7,11 +7,12 @@ import { formatPrecio, formatNumero } from '@/lib/format';
 import { claveAgrupacion } from '@/lib/agrupar';
 import Tarjeta, { Delta } from '@/app/components/Tarjeta';
 
-// Mismo azul que el gráfico de Reportes, ya validado con el script de la guía de
-// visualización. Acá las barras son de una sola serie (magnitud), así que va un
-// solo tono; el valor siempre está escrito al lado, porque este azul no llega a
-// 3:1 contra el blanco y el color no puede ser la única forma de leer el dato.
-const COLOR_BARRA = '#2a78d6';
+// Acá las barras son de una sola serie (magnitud), así que no hay par que
+// distinguir y va el terracota de --color-acento, el tono con el que la app
+// dibuja datos en todas las pantallas. Llega a 4.6:1 contra el panel, pero el
+// valor igual va escrito al lado: el color no puede ser la única forma de leer
+// el dato.
+const COLOR_BARRA = '#a75f3b';
 
 const NOMBRES_MES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -84,9 +85,9 @@ function totales(campanias: Campania[]) {
 // al lado, así el color nunca es la única forma de leer el dato.
 function Barra({ proporcion, titulo }: { proporcion: number; titulo: string }) {
   return (
-    <div className="w-full bg-gray-100 rounded-full h-2" title={titulo}>
+    <div className="w-full bg-marca-suave h-1.5" title={titulo}>
       <div
-        className="h-2 rounded-full"
+        className="h-1.5"
         style={{
           width: `${Math.max(proporcion * 100, proporcion > 0 ? 3 : 0)}%`,
           backgroundColor: COLOR_BARRA,
@@ -98,32 +99,32 @@ function Barra({ proporcion, titulo }: { proporcion: number; titulo: string }) {
 
 function SinConectar() {
   return (
-    <div className="bg-white rounded-xl shadow p-6">
-      <h2 className="text-sm font-semibold text-gray-700 mb-2">Falta conectar la cuenta de Meta</h2>
-      <p className="text-sm text-gray-500 mb-4">
+    <div className="panel p-6">
+      <h2 className="font-display text-lg font-normal text-tinta mb-2">Falta conectar la cuenta de Meta</h2>
+      <p className="text-sm text-tinta-suave mb-4">
         El panel lee los datos directo del Administrador de anuncios. Para eso necesita un token de
         acceso y el id de la cuenta publicitaria:
       </p>
-      <ol className="text-sm text-gray-600 space-y-2 list-decimal pl-5">
+      <ol className="text-sm text-tinta-media space-y-2 list-decimal pl-5">
         <li>
           Entrá a <span className="font-medium">developers.facebook.com</span> y creá una app de tipo
           &quot;Empresa&quot;.
         </li>
         <li>
           En el Explorador de la API de Graph, generá un token con el permiso{' '}
-          <code className="bg-gray-100 px-1 rounded text-xs">ads_read</code> y convertilo en token de
+          <code className="bg-marca-suave px-1 rounded text-xs">ads_read</code> y convertilo en token de
           larga duración.
         </li>
         <li>
           Copiá el id de la cuenta publicitaria (arriba de todo en el Administrador de anuncios, con
-          el formato <code className="bg-gray-100 px-1 rounded text-xs">act_123456789</code>).
+          el formato <code className="bg-marca-suave px-1 rounded text-xs">act_123456789</code>).
         </li>
         <li>
           Pegá los dos valores en el archivo{' '}
-          <code className="bg-gray-100 px-1 rounded text-xs">.env.local</code> de la app — ese es el
+          <code className="bg-marca-suave px-1 rounded text-xs">.env.local</code> de la app — ese es el
           archivo secreto que git ignora, no{' '}
-          <code className="bg-gray-100 px-1 rounded text-xs">.env.example</code>:
-          <pre className="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs overflow-x-auto">
+          <code className="bg-marca-suave px-1 rounded text-xs">.env.example</code>:
+          <pre className="mt-2 bg-panel-2 border border-borde rounded-panel p-3 text-xs overflow-x-auto">
 {`META_ACCESS_TOKEN=tu-token-largo
 META_AD_ACCOUNT_ID=act_123456789`}
           </pre>
@@ -280,35 +281,35 @@ export default function Campanias() {
       type="month"
       value={mes}
       onChange={(e) => cambiarMes(e.target.value)}
-      className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      className="w-full sm:w-auto border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca"
     />
   );
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Campañas</h1>
+        <h1 className="font-display text-3xl font-normal text-tinta">Campañas</h1>
         {selectorMes}
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Consultando Meta...</p>
+        <p className="text-tinta-suave">Consultando Meta...</p>
       ) : datos && !datos.configurada ? (
         <SinConectar />
       ) : error ? (
-        <div className="bg-white rounded-xl shadow p-5 border-l-4 border-red-400">
-          <p className="text-sm font-medium text-gray-800 mb-1">No se pudieron traer los datos</p>
-          <p className="text-sm text-gray-600">{error}</p>
+        <div className="panel p-5 border-l-4 border-rojo">
+          <p className="text-sm font-medium text-tinta mb-1">No se pudieron traer los datos</p>
+          <p className="text-sm text-tinta-media">{error}</p>
         </div>
       ) : (
         <>
           <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">{nombreMes(mes)}</h2>
+            <h2 className="font-display text-lg font-normal text-tinta">{nombreMes(mes)}</h2>
             {datos?.cuenta?.nombre && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-tinta-tenue">
                 {datos.cuenta.nombre}
                 {datos.cuenta.moneda && datos.cuenta.moneda !== 'ARS' && (
-                  <span className="ml-1 text-amber-600">· importes en {datos.cuenta.moneda}</span>
+                  <span className="ml-1 text-ocre">· importes en {datos.cuenta.moneda}</span>
                 )}
               </span>
             )}
@@ -324,7 +325,7 @@ export default function Campanias() {
               // Gastar más no es en sí una buena noticia: lo bueno o malo se ve
               // en el costo por conversación y en el resultado por canal.
               subeEsBueno={false}
-              colorValor="text-indigo-700"
+              colorValor="text-marca"
             />
             <Tarjeta
               etiqueta="Conversaciones iniciadas"
@@ -332,7 +333,7 @@ export default function Campanias() {
               detalle="Gente que te escribió"
               delta={hayPrevio ? deltaRelativo(t.conversaciones, tPrev.conversaciones, contra) : null}
               destacado
-              colorValor="text-green-600"
+              colorValor="text-verde"
             />
             <Tarjeta
               etiqueta="Costo por conversación"
@@ -354,15 +355,15 @@ export default function Campanias() {
           </div>
 
           {campanias.length === 0 ? (
-            <div className="bg-white rounded-xl shadow p-8 text-center">
-              <p className="text-gray-500 text-sm">No hubo campañas con actividad en {nombreMes(mes)}.</p>
+            <div className="panel p-8 text-center">
+              <p className="text-tinta-suave text-sm">No hubo campañas con actividad en {nombreMes(mes)}.</p>
             </div>
           ) : (
             <>
               {/* Campaña por campaña */}
-              <div className="bg-white rounded-xl shadow p-5 mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-1">Campaña por campaña</h3>
-                <p className="text-xs text-gray-400 mb-4">
+              <div className="panel p-5 mb-6">
+                <h3 className="font-display text-lg font-normal text-tinta mb-1">Campaña por campaña</h3>
+                <p className="text-xs text-tinta-tenue mb-4">
                   Ordenadas por inversión. El alcance no se suma entre campañas: la misma persona
                   puede haber visto más de una.
                 </p>
@@ -371,7 +372,7 @@ export default function Campanias() {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
+                      <tr className="text-left text-xs text-tinta-suave border-b border-borde">
                         <th className="pb-2 pr-3 font-medium">Campaña</th>
                         <th className="pb-2 px-2 font-medium text-right">Invertido</th>
                         <th className="pb-2 px-2 font-medium">Conversaciones</th>
@@ -382,16 +383,16 @@ export default function Campanias() {
                     </thead>
                     <tbody>
                       {campanias.map((c) => (
-                        <tr key={c.id} className="border-b border-gray-50 last:border-0">
-                          <td className="py-2.5 pr-3 text-gray-700 font-medium max-w-[240px] truncate" title={c.nombre}>
+                        <tr key={c.id} className="border-b border-borde-suave last:border-0">
+                          <td className="py-2.5 pr-3 text-tinta-media font-medium max-w-[240px] truncate" title={c.nombre}>
                             {c.nombre}
                           </td>
-                          <td className="py-2.5 px-2 text-right tabular-nums text-gray-700">
+                          <td className="py-2.5 px-2 text-right tabular-nums text-tinta-media">
                             {formatImporte(c.inversion)}
                           </td>
                           <td className="py-2.5 px-2 w-[160px]">
                             <div className="flex items-center gap-2">
-                              <span className="tabular-nums text-gray-700 w-8 shrink-0">
+                              <span className="tabular-nums text-tinta-media w-8 shrink-0">
                                 {formatNumero(c.conversaciones)}
                               </span>
                               <Barra
@@ -400,13 +401,13 @@ export default function Campanias() {
                               />
                             </div>
                           </td>
-                          <td className="py-2.5 px-2 text-right tabular-nums text-gray-700">
+                          <td className="py-2.5 px-2 text-right tabular-nums text-tinta-media">
                             {c.conversaciones > 0 ? formatImporte(c.costoPorConversacion) : '—'}
                           </td>
-                          <td className="py-2.5 px-2 text-right tabular-nums text-gray-500">
+                          <td className="py-2.5 px-2 text-right tabular-nums text-tinta-suave">
                             {formatNumero(c.alcance)}
                           </td>
-                          <td className="py-2.5 pl-2 text-right tabular-nums text-gray-500">{pct(c.ctr)}</td>
+                          <td className="py-2.5 pl-2 text-right tabular-nums text-tinta-suave">{pct(c.ctr)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -416,23 +417,23 @@ export default function Campanias() {
                 {/* Fichas en mobile */}
                 <div className="md:hidden space-y-3">
                   {campanias.map((c) => (
-                    <div key={c.id} className="border border-gray-100 rounded-lg p-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2 break-words">{c.nombre}</p>
+                    <div key={c.id} className="border border-borde-suave rounded-panel p-3">
+                      <p className="text-sm font-medium text-tinta-media mb-2 break-words">{c.nombre}</p>
                       <div className="grid grid-cols-2 gap-y-1.5 text-xs">
-                        <span className="text-gray-500">Invertido</span>
-                        <span className="text-right tabular-nums text-gray-700">
+                        <span className="text-tinta-suave">Invertido</span>
+                        <span className="text-right tabular-nums text-tinta-media">
                           {formatImporte(c.inversion)}
                         </span>
-                        <span className="text-gray-500">Conversaciones</span>
-                        <span className="text-right tabular-nums text-gray-700">
+                        <span className="text-tinta-suave">Conversaciones</span>
+                        <span className="text-right tabular-nums text-tinta-media">
                           {formatNumero(c.conversaciones)}
                         </span>
-                        <span className="text-gray-500">Costo c/u</span>
-                        <span className="text-right tabular-nums text-gray-700">
+                        <span className="text-tinta-suave">Costo c/u</span>
+                        <span className="text-right tabular-nums text-tinta-media">
                           {c.conversaciones > 0 ? formatImporte(c.costoPorConversacion) : '—'}
                         </span>
-                        <span className="text-gray-500">Alcance · CTR</span>
-                        <span className="text-right tabular-nums text-gray-500">
+                        <span className="text-tinta-suave">Alcance · CTR</span>
+                        <span className="text-right tabular-nums text-tinta-suave">
                           {formatNumero(c.alcance)} · {pct(c.ctr)}
                         </span>
                       </div>
@@ -443,9 +444,9 @@ export default function Campanias() {
 
               {/* Cruce con las ventas */}
               {porCanal.length > 0 && (
-                <div className="bg-white rounded-xl shadow p-5 mb-6">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Publicidad contra ventas</h3>
-                  <p className="text-xs text-gray-400 mb-4">
+                <div className="panel p-5 mb-6">
+                  <h3 className="font-display text-lg font-normal text-tinta mb-1">Publicidad contra ventas</h3>
+                  <p className="text-xs text-tinta-tenue mb-4">
                     Las ventas se cruzan por el canal que cargás a mano al registrarlas, no por el
                     clic: una venta de Instagram cuenta acá aunque la persona te haya escrito la
                     semana pasada. Sirve para ver la tendencia, no para atribuir venta por venta.
@@ -453,10 +454,10 @@ export default function Campanias() {
 
                   <div className="space-y-4">
                     {porCanal.map((c) => (
-                      <div key={c.clave} className="border-b border-gray-50 last:border-0 pb-4 last:pb-0">
+                      <div key={c.clave} className="border-b border-borde-suave last:border-0 pb-4 last:pb-0">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
-                          <span className="text-sm font-medium text-gray-700">{c.etiqueta}</span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-sm font-medium text-tinta-media">{c.etiqueta}</span>
+                          <span className="text-xs text-tinta-suave">
                             {formatImporte(c.inversion)} invertidos ·{' '}
                             {formatNumero(c.conversaciones)} conversaciones
                             {c.conversaciones > 0 && ` · ${formatImporte(c.costoPorConversacion)} c/u`}
@@ -464,12 +465,12 @@ export default function Campanias() {
                         </div>
 
                         {!c.cruzable ? (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-tinta-tenue">
                             No se puede cruzar con ventas: no hay un canal con este nombre en la
                             planilla.
                           </p>
                         ) : c.nVentas === 0 ? (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-tinta-tenue">
                             Sin ventas cargadas con este origen en {nombreMes(mes)}.
                           </p>
                         ) : !enPesos ? (
@@ -477,17 +478,17 @@ export default function Campanias() {
                           // un ROAS inventado. Se muestran las ventas del canal,
                           // que sí son un dato, pero no la división entre las dos.
                           <div className="text-xs">
-                            <p className="text-amber-700 mb-2">
+                            <p className="text-ocre-fuerte mb-2">
                               No se puede comparar con las ventas: la cuenta de Meta factura en{' '}
                               {moneda} y las ventas están en pesos.
                             </p>
-                            <p className="text-gray-400">
+                            <p className="text-tinta-tenue">
                               Vendido por este canal:{' '}
-                              <span className="tabular-nums font-medium text-gray-700">
+                              <span className="tabular-nums font-medium text-tinta-media">
                                 {formatPrecio(c.vendido)}
                               </span>{' '}
                               · ganancia bruta{' '}
-                              <span className="tabular-nums font-medium text-green-600">
+                              <span className="tabular-nums font-medium text-verde">
                                 {formatPrecio(c.ganancia)}
                               </span>
                             </p>
@@ -499,32 +500,32 @@ export default function Campanias() {
                                 proporcion={c.roas / maxRoas}
                                 titulo={`${c.roas.toFixed(1).replace('.', ',')} pesos vendidos por peso invertido`}
                               />
-                              <span className="text-xs tabular-nums text-gray-600 shrink-0 w-24 text-right">
+                              <span className="text-xs tabular-nums text-tinta-media shrink-0 w-24 text-right">
                                 {c.roas.toFixed(1).replace('.', ',')}× vendido
                               </span>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
-                                <p className="text-gray-400">Vendido</p>
-                                <p className="tabular-nums font-medium text-gray-700">
+                                <p className="text-tinta-tenue">Vendido</p>
+                                <p className="tabular-nums font-medium text-tinta-media">
                                   {formatPrecio(c.vendido)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-gray-400">Ganancia bruta</p>
-                                <p className="tabular-nums font-medium text-green-600">
+                                <p className="text-tinta-tenue">Ganancia bruta</p>
+                                <p className="tabular-nums font-medium text-verde">
                                   {formatPrecio(c.ganancia)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-gray-400">Menos publicidad</p>
+                                <p className="text-tinta-tenue">Menos publicidad</p>
                                 {/* La flecha y la palabra dicen lo mismo que el
                                     color, así que el importe va en valor
                                     absoluto: "▼ −$9.650" tiene el signo dos
                                     veces y se lee peor. */}
                                 <p
                                   className={`tabular-nums font-bold ${
-                                    c.resultado >= 0 ? 'text-green-600' : 'text-red-500'
+                                    c.resultado >= 0 ? 'text-verde' : 'text-rojo'
                                   }`}
                                 >
                                   {c.resultado >= 0 ? '▲ Quedaron ' : '▼ Faltaron '}
@@ -541,10 +542,10 @@ export default function Campanias() {
               )}
 
               {/* Pasar la inversión a Gastos */}
-              <div className="bg-white rounded-xl shadow p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-1">Descontar la publicidad</h3>
+              <div className="panel p-5">
+                <h3 className="font-display text-lg font-normal text-tinta mb-1">Descontar la publicidad</h3>
                 {enPesos ? (
-                  <p className="text-xs text-gray-400 mb-4">
+                  <p className="text-xs text-tinta-tenue mb-4">
                     Reportes calcula el resultado del mes con la hoja Gastos. Este botón carga ahí
                     los {formatImporte(t.inversion)} de {nombreMes(mes)} como{' '}
                     <span className="font-medium">Gasto Comercializacion</span>. Si ya lo cargaste
@@ -553,7 +554,7 @@ export default function Campanias() {
                 ) : (
                   // Se avisa antes y no al apretar: el botón no va a funcionar
                   // nunca con esta cuenta, y enterarse después del clic es peor.
-                  <p className="text-xs text-amber-700 mb-4">
+                  <p className="text-xs text-ocre-fuerte mb-4">
                     La cuenta de Meta factura en {moneda} y la hoja Gastos lleva pesos. Copiar{' '}
                     {formatImporte(t.inversion)} tal cual metería {moneda} en la columna de pesos y
                     ensuciaría el resultado del mes en Reportes, así que la carga automática queda
@@ -565,11 +566,11 @@ export default function Campanias() {
                   <button
                     onClick={sincronizarGasto}
                     disabled={sincronizando || t.inversion <= 0 || !enPesos}
-                    className="rounded-lg bg-[#6b4423] px-4 py-2 text-sm font-medium text-white hover:bg-[#553619] disabled:opacity-50 transition-colors"
+                    className="rounded-panel bg-marca px-4 py-2 text-sm font-medium text-white hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
                   >
                     {sincronizando ? 'Cargando...' : 'Cargar en Gastos'}
                   </button>
-                  {avisoSync && <span className="text-sm text-gray-600">{avisoSync}</span>}
+                  {avisoSync && <span className="text-sm text-tinta-media">{avisoSync}</span>}
                 </div>
               </div>
             </>

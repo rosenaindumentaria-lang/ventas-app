@@ -46,7 +46,7 @@ export default function LoginPage() {
   }
 
   if (modo === 'cargando') {
-    return <p className="text-center text-gray-500 mt-12">Cargando…</p>;
+    return <p className="text-center text-tinta-suave mt-12">Cargando…</p>;
   }
 
   const esSetup = modo === 'setup';
@@ -56,56 +56,56 @@ export default function LoginPage() {
       <div className="text-center mb-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.png" alt="Rosena" className="h-16 w-auto mx-auto mb-3" />
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-tinta-suave mt-1">
           {esSetup ? 'Creá el primer usuario administrador' : 'Ingresá para continuar'}
         </p>
       </div>
 
-      <form onSubmit={enviar} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
+      <form onSubmit={enviar} className="panel p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+          <label className="block text-sm font-medium text-tinta-media mb-1">Usuario</label>
           <input
             type="text"
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
             autoFocus
             autoComplete="username"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+            className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none"
             required
           />
         </div>
 
         {esSetup && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label className="block text-sm font-medium text-tinta-media mb-1">Nombre</label>
             <input
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre para mostrar"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+              className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none"
             />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <label className="block text-sm font-medium text-tinta-media mb-1">Contraseña</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete={esSetup ? 'new-password' : 'current-password'}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+            className="w-full rounded-panel border border-borde px-3 py-2 text-sm focus:border-marca focus:ring-1 focus:ring-marca outline-none"
             required
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-rojo">{error}</p>}
 
         <button
           type="submit"
           disabled={enviando}
-          className="w-full rounded-lg bg-[#6b4423] text-white py-2 font-medium hover:bg-[#553619] disabled:opacity-50 transition-colors"
+          className="w-full rounded-panel bg-marca text-white py-2 font-medium hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
         >
           {enviando ? 'Procesando…' : esSetup ? 'Crear y entrar' : 'Entrar'}
         </button>

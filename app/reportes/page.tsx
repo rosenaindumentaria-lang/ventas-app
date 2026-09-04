@@ -199,7 +199,7 @@ export default function Reportes() {
       .sort((a, b) => b.total - a.total);
   }, [ventasMes]);
 
-  if (loading) return <p className="text-gray-500">Cargando reportes...</p>;
+  if (loading) return <p className="text-tinta-suave">Cargando reportes...</p>;
 
   const avanceEquilibrio = m.equilibrio > 0 ? Math.min(m.total / m.equilibrio, 1) : 0;
   const faltaEquilibrio = Math.max(m.equilibrio - m.total, 0);
@@ -208,12 +208,12 @@ export default function Reportes() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Reportes</h1>
+        <h1 className="font-display text-3xl font-normal text-tinta">Reportes</h1>
         <input
           type="month"
           value={mes}
           onChange={(e) => setMes(e.target.value)}
-          className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-full sm:w-auto border border-borde rounded-panel px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-marca"
         />
       </div>
 
@@ -221,7 +221,7 @@ export default function Reportes() {
         <GraficoMensual datos={porMes} mesSeleccionado={mes} onSeleccionarMes={setMes} />
       </div>
 
-      <h2 className="text-sm font-semibold text-gray-700 mb-3">{nombreMes(mes)}</h2>
+      <h2 className="font-display text-lg font-normal text-tinta mb-3">{nombreMes(mes)}</h2>
 
       {/* Indicadores del mes, con la variación contra el mes anterior */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
@@ -230,14 +230,14 @@ export default function Reportes() {
           valor={formatPrecio(m.total)}
           detalle={`${m.nVentas} ${m.nVentas === 1 ? 'venta' : 'ventas'} · ${m.unidades} u`}
           delta={deltaRelativo(m.total, mPrev.total, contra)}
-          colorValor="text-indigo-700"
+          colorValor="text-marca"
         />
         <Tarjeta
           etiqueta="Ganancia bruta"
           valor={formatPrecio(m.ganancia)}
           detalle={`Costo ${formatPrecio(m.costo)}`}
           delta={deltaRelativo(m.ganancia, mPrev.ganancia, contra)}
-          colorValor="text-green-600"
+          colorValor="text-verde"
         />
         <Tarjeta
           etiqueta="Margen bruto"
@@ -255,21 +255,21 @@ export default function Reportes() {
 
       {/* Rentabilidad: de la ganancia bruta a lo que queda de verdad */}
       <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Resultado del mes</h3>
+        <div className="panel p-5">
+          <h3 className="font-display text-lg font-normal text-tinta mb-4">Resultado del mes</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Ganancia bruta</span>
-              <span className="font-medium text-green-600 tabular-nums">{formatPrecio(m.ganancia)}</span>
+              <span className="text-tinta-suave">Ganancia bruta</span>
+              <span className="font-medium text-verde tabular-nums">{formatPrecio(m.ganancia)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Gastos</span>
-              <span className="font-medium text-rose-600 tabular-nums">− {formatPrecio(m.gastos)}</span>
+              <span className="text-tinta-suave">Gastos</span>
+              <span className="font-medium text-rojo tabular-nums">− {formatPrecio(m.gastos)}</span>
             </div>
             <div className="flex justify-between border-t pt-2">
-              <span className="font-medium text-gray-700">Resultado</span>
+              <span className="font-medium text-tinta-media">Resultado</span>
               <span
-                className={`font-bold tabular-nums ${m.resultado >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                className={`font-bold tabular-nums ${m.resultado >= 0 ? 'text-verde' : 'text-rojo'}`}
               >
                 {formatPrecio(m.resultado)}
               </span>
@@ -278,18 +278,18 @@ export default function Reportes() {
 
           <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t">
             <div>
-              <p className="text-xs text-gray-500">Gastos sobre ventas</p>
+              <p className="text-xs text-tinta-suave">Gastos sobre ventas</p>
               <p
                 className={`text-base font-bold ${
-                  m.gastosSobreVentas > m.margenBruto ? 'text-red-500' : 'text-gray-800'
+                  m.gastosSobreVentas > m.margenBruto ? 'text-rojo' : 'text-tinta'
                 }`}
               >
                 {m.total ? pct(m.gastosSobreVentas) : '—'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Margen neto</p>
-              <p className={`text-base font-bold ${m.margenNeto >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              <p className="text-xs text-tinta-suave">Margen neto</p>
+              <p className={`text-base font-bold ${m.margenNeto >= 0 ? 'text-verde' : 'text-rojo'}`}>
                 {m.total ? pct(m.margenNeto) : '—'}
               </p>
             </div>
@@ -297,39 +297,39 @@ export default function Reportes() {
         </div>
 
         {/* Punto de equilibrio */}
-        <div className="bg-white rounded-xl shadow p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Punto de equilibrio</h3>
-          <p className="text-xs text-gray-400 mb-4">
+        <div className="panel p-5">
+          <h3 className="font-display text-lg font-normal text-tinta mb-1">Punto de equilibrio</h3>
+          <p className="text-xs text-tinta-tenue mb-4">
             Cuánto hay que vender para que la ganancia cubra los gastos del mes
           </p>
 
           {m.gastos === 0 ? (
-            <p className="text-gray-400 text-sm py-6 text-center">Sin gastos cargados este mes</p>
+            <p className="text-tinta-tenue text-sm py-6 text-center">Sin gastos cargados este mes</p>
           ) : m.margenBruto <= 0 ? (
-            <p className="text-gray-400 text-sm py-6 text-center">
+            <p className="text-tinta-tenue text-sm py-6 text-center">
               Sin margen no hay equilibrio posible: cada venta no deja nada para cubrir gastos
             </p>
           ) : (
             <>
-              <p className="text-2xl font-bold text-gray-800 break-words">{formatPrecio(m.equilibrio)}</p>
-              <p className="text-xs text-gray-400 mb-3">
+              <p className="font-display text-3xl font-normal text-tinta break-words">{formatPrecio(m.equilibrio)}</p>
+              <p className="text-xs text-tinta-tenue mb-3">
                 con un margen de {pct(m.margenBruto)}
               </p>
 
-              <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-marca-suave h-2 overflow-hidden">
                 <div
-                  className={`h-3 rounded-full ${cubierto ? 'bg-green-500' : 'bg-indigo-500'}`}
+                  className={`h-2 ${cubierto ? 'bg-verde' : 'bg-acento'}`}
                   style={{ width: `${avanceEquilibrio * 100}%` }}
                 />
               </div>
               <div className="flex justify-between text-xs mt-1.5">
-                <span className="text-gray-500">
+                <span className="text-tinta-suave">
                   Vendido {formatPrecio(m.total)} ({pct(avanceEquilibrio)})
                 </span>
                 {cubierto ? (
-                  <span className="font-medium text-green-600">Cubierto ✓</span>
+                  <span className="font-medium text-verde">Cubierto ✓</span>
                 ) : (
-                  <span className="font-medium text-gray-700">Faltan {formatPrecio(faltaEquilibrio)}</span>
+                  <span className="font-medium text-tinta-media">Faltan {formatPrecio(faltaEquilibrio)}</span>
                 )}
               </div>
             </>
@@ -339,11 +339,11 @@ export default function Reportes() {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* De dónde vienen las ventas */}
-        <div className="bg-white rounded-xl shadow p-5 h-fit">
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Por canal</h3>
-          <p className="text-xs text-gray-400 mb-4">Dónde se vende y con qué margen</p>
+        <div className="panel p-5 h-fit">
+          <h3 className="font-display text-lg font-normal text-tinta mb-1">Por canal</h3>
+          <p className="text-xs text-tinta-tenue mb-4">Dónde se vende y con qué margen</p>
           {porCanal.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">Sin ventas este mes</p>
+            <p className="text-tinta-tenue text-sm text-center py-8">Sin ventas este mes</p>
           ) : (
             <div className="space-y-3">
               {porCanal.map((c) => {
@@ -351,14 +351,14 @@ export default function Reportes() {
                 return (
                   <div key={c.etiqueta}>
                     <div className="flex flex-wrap justify-between gap-x-3 text-sm mb-1">
-                      <span className="text-gray-700 font-medium">{c.etiqueta}</span>
-                      <span className="text-gray-500 text-xs sm:text-sm">
+                      <span className="text-tinta-media font-medium">{c.etiqueta}</span>
+                      <span className="text-tinta-suave text-xs sm:text-sm">
                         {formatPrecio(c.total)} · {pct(share)} ·{' '}
-                        <span className="text-green-600">margen {pct(c.total ? c.ganancia / c.total : 0)}</span>
+                        <span className="text-verde">margen {pct(c.total ? c.ganancia / c.total : 0)}</span>
                       </span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3">
-                      <div className="bg-indigo-500 h-3 rounded-full" style={{ width: `${share * 100}%` }} />
+                    <div className="w-full bg-marca-suave h-2">
+                      <div className="bg-acento h-2" style={{ width: `${share * 100}%` }} />
                     </div>
                   </div>
                 );
@@ -368,11 +368,11 @@ export default function Reportes() {
         </div>
 
         {/* Por tipo de precio */}
-        <div className="bg-white rounded-xl shadow p-5 h-fit">
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Por tipo de precio</h3>
-          <p className="text-xs text-gray-400 mb-4">Cómo pagan y qué margen deja cada forma</p>
+        <div className="panel p-5 h-fit">
+          <h3 className="font-display text-lg font-normal text-tinta mb-1">Por tipo de precio</h3>
+          <p className="text-xs text-tinta-tenue mb-4">Cómo pagan y qué margen deja cada forma</p>
           {porTipo.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">Sin ventas este mes</p>
+            <p className="text-tinta-tenue text-sm text-center py-8">Sin ventas este mes</p>
           ) : (
             <div className="space-y-3">
               {porTipo.map((t) => {
@@ -380,14 +380,14 @@ export default function Reportes() {
                 return (
                   <div key={t.etiqueta}>
                     <div className="flex flex-wrap justify-between gap-x-3 text-sm mb-1">
-                      <span className="text-gray-600">{t.etiqueta}</span>
-                      <span className="text-gray-500 text-xs sm:text-sm">
+                      <span className="text-tinta-media">{t.etiqueta}</span>
+                      <span className="text-tinta-suave text-xs sm:text-sm">
                         {formatPrecio(t.total)} ({pct(share)}) ·{' '}
-                        <span className="text-green-600">margen {pct(t.total ? t.ganancia / t.total : 0)}</span>
+                        <span className="text-verde">margen {pct(t.total ? t.ganancia / t.total : 0)}</span>
                       </span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3">
-                      <div className="bg-indigo-400 h-3 rounded-full" style={{ width: `${share * 100}%` }} />
+                    <div className="w-full bg-marca-suave h-2">
+                      <div className="bg-acento-claro h-2" style={{ width: `${share * 100}%` }} />
                     </div>
                   </div>
                 );
@@ -398,22 +398,22 @@ export default function Reportes() {
       </div>
 
       {/* Ventas por día */}
-      <div className="bg-white rounded-xl shadow p-5 mt-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4">Ventas por día</h3>
+      <div className="panel p-5 mt-6">
+        <h3 className="font-display text-lg font-normal text-tinta mb-4">Ventas por día</h3>
         {ventasPorDia.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">Sin datos para este mes</p>
+          <p className="text-tinta-tenue text-sm text-center py-8">Sin datos para este mes</p>
         ) : (
           <div className="space-y-2">
             {ventasPorDia.map(([fecha, total]) => (
               <div key={fecha} className="flex items-center gap-2 sm:gap-3 text-sm">
-                <span className="text-gray-500 w-11 shrink-0 tabular-nums">{fecha.slice(5).replace('-', '/')}</span>
-                <div className="flex-1 min-w-0 bg-gray-100 rounded-full h-4 sm:h-5 overflow-hidden">
+                <span className="text-tinta-suave w-11 shrink-0 tabular-nums">{fecha.slice(5).replace('-', '/')}</span>
+                <div className="flex-1 min-w-0 bg-marca-suave h-2.5 overflow-hidden">
                   <div
-                    className="bg-indigo-500 h-full rounded-full"
+                    className="bg-acento h-full"
                     style={{ width: `${(total / maxDia) * 100}%` }}
                   />
                 </div>
-                <span className="text-gray-700 font-medium text-right shrink-0 tabular-nums text-xs sm:text-sm">
+                <span className="text-tinta-media font-medium text-right shrink-0 tabular-nums text-xs sm:text-sm">
                   {formatPrecio(total)}
                 </span>
               </div>
@@ -423,31 +423,31 @@ export default function Reportes() {
       </div>
 
       {/* Ventas por rubro */}
-      <div className="bg-white rounded-xl shadow mt-6 overflow-hidden">
+      <div className="panel mt-6 overflow-hidden">
         <div className="px-5 py-4 border-b flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-gray-700">Ventas por rubro</h3>
+          <h3 className="font-display text-lg font-normal text-tinta">Ventas por rubro</h3>
           {porRubro.length > 0 && (
-            <span className="text-xs text-gray-400">
-              Más vendido: <span className="font-semibold text-indigo-600">{porRubro[0].etiqueta}</span>
+            <span className="text-xs text-tinta-tenue">
+              Más vendido: <span className="font-semibold text-marca">{porRubro[0].etiqueta}</span>
             </span>
           )}
         </div>
         {porRubro.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">Sin ventas este mes</p>
+          <p className="text-tinta-tenue text-sm text-center py-8">Sin ventas este mes</p>
         ) : (
           <div className="p-5 space-y-3">
             {porRubro.map((r) => (
               <div key={r.etiqueta}>
                 <div className="flex flex-wrap justify-between gap-x-3 text-sm mb-1">
-                  <span className="text-gray-700 font-medium">{r.etiqueta}</span>
-                  <span className="text-gray-500 text-xs sm:text-sm">
+                  <span className="text-tinta-media font-medium">{r.etiqueta}</span>
+                  <span className="text-tinta-suave text-xs sm:text-sm">
                     {r.cantidad} u · {formatPrecio(r.total)} ·{' '}
-                    <span className="text-green-600">margen {pct(r.total ? r.ganancia / r.total : 0)}</span>
+                    <span className="text-verde">margen {pct(r.total ? r.ganancia / r.total : 0)}</span>
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
+                <div className="w-full bg-marca-suave h-2">
                   <div
-                    className="bg-indigo-500 h-3 rounded-full"
+                    className="bg-acento h-2"
                     style={{ width: `${(r.total / maxRubro) * 100}%` }}
                   />
                 </div>
@@ -458,16 +458,16 @@ export default function Reportes() {
       </div>
 
       {/* Top productos */}
-      <div className="bg-white rounded-xl shadow mt-6 overflow-hidden">
+      <div className="panel mt-6 overflow-hidden">
         <div className="px-5 py-4 border-b">
-          <h3 className="text-sm font-semibold text-gray-700">Top 10 Productos</h3>
+          <h3 className="font-display text-lg font-normal text-tinta">Top 10 Productos</h3>
         </div>
         {topProductos.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">Sin ventas este mes</p>
+          <p className="text-tinta-tenue text-sm text-center py-8">Sin ventas este mes</p>
         ) : (
           <>
             <table className="hidden md:table w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+              <thead className="bg-panel-2 text-tinta-suave uppercase text-[11px] tracking-wider">
                 <tr>
                   <th className="px-5 py-3 text-left">#</th>
                   <th className="px-5 py-3 text-left">Producto</th>
@@ -477,15 +477,15 @@ export default function Reportes() {
                   <th className="px-5 py-3 text-right">Margen</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-borde-suave">
                 {topProductos.map((p, i) => (
-                  <tr key={p.cod} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 text-gray-400">{i + 1}</td>
-                    <td className="px-5 py-3 font-medium text-gray-800">{p.nombre}</td>
+                  <tr key={p.cod} className="hover:bg-panel-2">
+                    <td className="px-5 py-3 text-tinta-tenue">{i + 1}</td>
+                    <td className="px-5 py-3 font-medium text-tinta">{p.nombre}</td>
                     <td className="px-5 py-3 text-center">{p.cantidad}</td>
                     <td className="px-5 py-3 text-right font-semibold tabular-nums">{formatPrecio(p.total)}</td>
-                    <td className="px-5 py-3 text-right text-green-600 tabular-nums">{formatPrecio(p.ganancia)}</td>
-                    <td className="px-5 py-3 text-right text-gray-500 tabular-nums">
+                    <td className="px-5 py-3 text-right text-verde tabular-nums">{formatPrecio(p.ganancia)}</td>
+                    <td className="px-5 py-3 text-right text-tinta-suave tabular-nums">
                       {p.total ? pct(p.ganancia / p.total) : '—'}
                     </td>
                   </tr>
@@ -493,29 +493,29 @@ export default function Reportes() {
               </tbody>
             </table>
 
-            <ul className="md:hidden divide-y divide-gray-100">
+            <ul className="md:hidden divide-y divide-borde-suave">
               {topProductos.map((p, i) => (
                 <li key={p.cod} className="px-4 py-3">
                   <div className="flex items-start gap-2">
-                    <span className="text-gray-300 font-bold text-sm shrink-0 w-5">{i + 1}</span>
-                    <p className="font-medium text-gray-800 text-sm break-words flex-1">{p.nombre}</p>
+                    <span className="text-tinta-tenue font-bold text-sm shrink-0 w-5">{i + 1}</span>
+                    <p className="font-medium text-tinta text-sm break-words flex-1">{p.nombre}</p>
                   </div>
                   <div className="mt-1.5 pl-7 grid grid-cols-4 gap-2 text-xs">
                     <div>
-                      <span className="block text-gray-400">Unid.</span>
-                      <span className="font-medium text-gray-700">{p.cantidad}</span>
+                      <span className="block text-tinta-tenue">Unid.</span>
+                      <span className="font-medium text-tinta-media">{p.cantidad}</span>
                     </div>
                     <div>
-                      <span className="block text-gray-400">Total</span>
-                      <span className="font-semibold text-gray-800 break-words">{formatPrecio(p.total)}</span>
+                      <span className="block text-tinta-tenue">Total</span>
+                      <span className="font-semibold text-tinta break-words">{formatPrecio(p.total)}</span>
                     </div>
                     <div>
-                      <span className="block text-gray-400">Ganancia</span>
-                      <span className="font-medium text-green-600 break-words">{formatPrecio(p.ganancia)}</span>
+                      <span className="block text-tinta-tenue">Ganancia</span>
+                      <span className="font-medium text-verde break-words">{formatPrecio(p.ganancia)}</span>
                     </div>
                     <div>
-                      <span className="block text-gray-400">Margen</span>
-                      <span className="font-medium text-gray-700">{p.total ? pct(p.ganancia / p.total) : '—'}</span>
+                      <span className="block text-tinta-tenue">Margen</span>
+                      <span className="font-medium text-tinta-media">{p.total ? pct(p.ganancia / p.total) : '—'}</span>
                     </div>
                   </div>
                 </li>
