@@ -113,7 +113,16 @@ export default function Caja() {
   const ventasFiltradasTotal = ventasFiltradas.reduce((a, v) => a + v.total, 0);
   const gastosFiltradosTotal = gastosFiltrados.reduce((a, g) => a + g.monto, 0);
   const movsFiltradosTotal = movsFiltrados.reduce((a, m) => a + m.monto, 0);
-  const resultadoFiltrado = ventasFiltradasTotal + movsFiltradosTotal - gastosFiltradosTotal;
+  // Dos preguntas distintas que antes compartían el nombre "Resultado":
+  //  · variacionCaja: cuánta plata entró menos cuánta salió. Usa ventas BRUTAS
+  //    y suma préstamos, así que NO es ganancia — solo movimiento de caja.
+  //  · gananciaNeta: lo que de verdad ganaste. Ganancia de cada venta (precio
+  //    menos costo de la mercadería) menos los gastos. Los préstamos no entran.
+  // Mostrar la primera en verde bajo el nombre "Resultado" hacía ver ganancia
+  // en meses que en realidad dieron pérdida.
+  const variacionCaja = ventasFiltradasTotal + movsFiltradosTotal - gastosFiltradosTotal;
+  const gananciaFiltradaTotal = ventasFiltradas.reduce((a, v) => a + v.ganancia, 0);
+  const gananciaNeta = gananciaFiltradaTotal - gastosFiltradosTotal;
   // Si nunca se cargó un movimiento, la caja se ve igual que antes: sin columnas
   // de más. Se mira la cantidad y no el neto, porque el neto puede dar 0 (un
   // préstamo ya devuelto del todo) y las filas igual existen.
@@ -177,7 +186,7 @@ export default function Caja() {
                 Gastos históricos: <strong className="text-white">{formatPrecio(totalGastosHist)}</strong>
               </span>
               <span className="text-marca-suave">
-                Resultado neto (ganancia − gastos):{' '}
+                Ganancia neta histórica:{' '}
                 <strong className="text-white">{formatPrecio(resultadoNetoHist)}</strong>
               </span>
             </div>
@@ -223,11 +232,26 @@ export default function Caja() {
                 <p className="text-base sm:text-xl font-bold text-rojo break-words">{formatPrecio(gastosFiltradosTotal)}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-tinta-suave mb-1">Resultado</p>
-                <p className={`text-base sm:text-xl font-bold break-words ${resultadoFiltrado >= 0 ? 'text-verde' : 'text-rojo'}`}>
-                  {formatPrecio(resultadoFiltrado)}
+                <p className="text-xs text-tinta-suave mb-1">Variación de caja</p>
+                <p className="text-base sm:text-xl font-bold break-words text-tinta">
+                  {formatPrecio(variacionCaja)}
                 </p>
               </div>
+            </div>
+
+            {/* La ganancia de verdad, separada del movimiento de caja. Es el
+                único número de esta pantalla que lleva verde o rojo. */}
+            <div className="mt-5 pt-5 border-t border-borde-suave flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <div>
+                <p className="text-sm font-semibold text-tinta">Ganancia neta del período</p>
+                <p className="text-xs text-tinta-suave mt-0.5">
+                  Ganancia de las ventas {formatPrecio(gananciaFiltradaTotal)} menos gastos {formatPrecio(gastosFiltradosTotal)}.
+                  Los préstamos no cuentan.
+                </p>
+              </div>
+              <p className={`text-2xl font-bold break-words ${gananciaNeta >= 0 ? 'text-verde' : 'text-rojo'}`}>
+                {formatPrecio(gananciaNeta)}
+              </p>
             </div>
           </div>
 
@@ -247,13 +271,15 @@ export default function Caja() {
                       <th className="px-5 py-3 text-right">Ventas</th>
                       {hayMovs && <th className="px-5 py-3 text-right">Otros movim.</th>}
                       <th className="px-5 py-3 text-right">Gastos</th>
-                      <th className="px-5 py-3 text-right">Resultado mes</th>
+                      <th className="px-5 py-3 text-right">Ganancia neta</th>
+                      <th className="px-5 py-3 text-right">Variación caja</th>
                       <th className="px-5 py-3 text-right">Saldo acumulado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-borde-suave">
                     {evolucion.map((e) => {
-                      const resultadoMes = e.ventas + e.movs - e.gastos;
+                      const variacionMes = e.ventas + e.movs - e.gastos;
+                      const gananciaMes = e.ganancia - e.gastos;
                       return (
                         <tr
                           key={e.ym}
@@ -270,8 +296,11 @@ export default function Caja() {
                             </td>
                           )}
                           <td className="px-5 py-3 text-right text-rojo">{formatPrecio(e.gastos)}</td>
-                          <td className={`px-5 py-3 text-right font-medium ${resultadoMes >= 0 ? 'text-verde' : 'text-rojo'}`}>
-                            {formatPrecio(resultadoMes)}
+                          <td className={`px-5 py-3 text-right font-medium ${gananciaMes >= 0 ? 'text-verde' : 'text-rojo'}`}>
+                            {formatPrecio(gananciaMes)}
+                          </td>
+                          <td className="px-5 py-3 text-right text-tinta-media">
+                            {formatPrecio(variacionMes)}
                           </td>
                           <td className={`px-5 py-3 text-right font-bold ${e.saldoAcum >= 0 ? 'text-tinta' : 'text-rojo'}`}>
                             {formatPrecio(e.saldoAcum)}
@@ -291,7 +320,7 @@ export default function Caja() {
                   .slice()
                   .reverse()
                   .map((e) => {
-                    const resultadoMes = e.ventas + e.movs - e.gastos;
+                    const gananciaMes = e.ganancia - e.gastos;
                     return (
                       <button
                         key={e.ym}
@@ -325,9 +354,9 @@ export default function Caja() {
                             <span className="font-medium text-rojo break-words">{formatPrecio(e.gastos)}</span>
                           </div>
                           <div>
-                            <span className="block text-tinta-tenue">Resultado</span>
-                            <span className={`font-medium break-words ${resultadoMes >= 0 ? 'text-verde' : 'text-rojo'}`}>
-                              {formatPrecio(resultadoMes)}
+                            <span className="block text-tinta-tenue">Ganancia neta</span>
+                            <span className={`font-medium break-words ${gananciaMes >= 0 ? 'text-verde' : 'text-rojo'}`}>
+                              {formatPrecio(gananciaMes)}
                             </span>
                           </div>
                         </div>
