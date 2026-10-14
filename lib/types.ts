@@ -7,6 +7,10 @@ export interface Producto {
   // gente del local o cómo lo describiría alguien que lo ve en la mano. El
   // buscador las usa, así no hace falta saberse el nombre de la planilla.
   otrosNombres: string;
+  // Fotos del artículo (pestaña FOTOS). La miniatura es para listas y grillas;
+  // la foto, para verlo grande. Vacías si todavía nadie le sacó una.
+  foto: string;
+  miniatura: string;
   costo: number;
   margenFinan: number;
   margenEfectivo: number;

@@ -17,6 +17,7 @@ const SHEET_VENTAS = 'Ventas';
 const SHEET_GASTOS = 'Gastos';
 const SHEET_MOVIMIENTOS = 'MOVIMIENTOS';
 const SHEET_USUARIOS = 'USUARIOS';
+const SHEET_FOTOS = 'FOTOS';
 
 function getAuth() {
   return new google.auth.GoogleAuth({
@@ -59,10 +60,13 @@ export async function getProductos(): Promise<Producto[]> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });
 
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEET_PRODUCTOS}!A2:N1000`,
-  });
+  const [response, fotos] = await Promise.all([
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_PRODUCTOS}!A2:N1000`,
+    }),
+    getFotos(sheets),
+  ]);
 
   const rows = response.data.values || [];
 
@@ -77,6 +81,8 @@ export async function getProductos(): Promise<Producto[]> {
       descripcion: row[2] || '',
       nombreComercial: row[3] || '',
       otrosNombres: row[4] || '',
+      foto: fotos.get(String(row[0]).trim())?.foto || '',
+      miniatura: fotos.get(String(row[0]).trim())?.miniatura || '',
       costo: parsePrecio(row[5]),
       margenFinan: parseFloat(row[7]) || 0,
       margenEfectivo: parseFloat(row[8]) || 0,
@@ -86,6 +92,92 @@ export async function getProductos(): Promise<Producto[]> {
       precioEfectivo: parsePrecio(row[12]),
       precioMayor: parsePrecio(row[13]),
     }));
+}
+
+// ── FOTOS ───────────────────────────────────────────────────────────────────
+
+// Pestaña propia de la app: A=COD, B=FOTO, C=MINIATURA, D=FECHA, E=USUARIO.
+// Las imágenes viven en Vercel Blob; acá sólo queda qué foto es de qué código.
+// Va aparte de BASE DE DATOS para no escribir nunca en la hoja de productos,
+// que se mantiene a mano.
+
+type FotoGuardada = { foto: string; miniatura: string };
+
+// Si la pestaña todavía no existe (nadie subió fotos), no hay fotos: no es un
+// error, y no puede frenar la carga de productos.
+async function getFotos(sheets: ReturnType<typeof google.sheets>) {
+  const fotos = new Map<string, FotoGuardada>();
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_FOTOS}!A2:C5000`,
+    });
+    for (const row of res.data.values || []) {
+      const cod = (row[0] || '').toString().trim();
+      if (cod && row[1]) fotos.set(cod, { foto: row[1], miniatura: row[2] || row[1] });
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (!msg.includes('Unable to parse range')) console.error('Error leyendo FOTOS:', error);
+  }
+  return fotos;
+}
+
+async function ensureFotosSheet(sheets: ReturnType<typeof google.sheets>) {
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hojas = (spreadsheet.data.sheets || []).map((s) =>
+    (s.properties?.title || '').trim().toLowerCase()
+  );
+  if (hojas.includes(SHEET_FOTOS.toLowerCase())) return;
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: SHEET_FOTOS } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_FOTOS}!A1:E1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['COD', 'FOTO', 'MINIATURA', 'FECHA', 'USUARIO']] },
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (!msg.includes('already exists')) throw error;
+  }
+}
+
+// Anota la foto de un código: pisa la fila si ya tenía una, o agrega una nueva.
+// Devuelve la anterior, para que quien llama borre esas imágenes del Blob.
+export async function guardarFoto(
+  cod: string,
+  foto: FotoGuardada,
+  usuario: string
+): Promise<FotoGuardada | null> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+  await ensureFotosSheet(sheets);
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_FOTOS}!A:C`,
+  });
+  const filas = res.data.values || [];
+  const i = filas.findIndex((row, n) => n > 0 && (row[0] || '').toString().trim() === cod);
+  const anterior = i > 0 ? { foto: filas[i][1] || '', miniatura: filas[i][2] || '' } : null;
+  const fila = i > 0 ? i + 1 : filas.length + 1;
+
+  await asegurarFila(sheets, SHEET_FOTOS, fila);
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_FOTOS}!A${fila}:E${fila}`,
+    // RAW: el código tiene que quedar como texto ("007" no es 7).
+    valueInputOption: 'RAW',
+    requestBody: {
+      values: [[cod, foto.foto, foto.miniatura, new Date().toISOString().slice(0, 10), usuario]],
+    },
+  });
+  return anterior;
 }
 
 // Estructura real de la hoja VENTAS:

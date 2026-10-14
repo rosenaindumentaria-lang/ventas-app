@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useRef, useId } from 'react';
 import { Producto } from '@/lib/types';
 import { formatPrecio } from '@/lib/format';
 import { hoyISO, etiquetaFecha } from '@/lib/fecha';
+import { normalizar } from '@/lib/texto';
+import { Miniatura, BotonFoto, ChipsRubro, rubrosDe, claveRubro } from '@/app/components/FotoProducto';
 
 type TipoPrecio = 'UNIDAD' | 'EFECTIVO' | 'MAYOR';
 
@@ -27,11 +29,6 @@ function detalleProducto(p: Producto) {
     .join(' · ');
 }
 
-// Minúsculas y sin tildes: "pantalón" y "PANTALON" tienen que dar lo mismo.
-function normalizar(texto: string) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
-
 // Todo lo que se sabe de un producto, junto, para buscar en un solo lugar.
 function textoBuscable(p: Producto) {
   return normalizar([p.nombreComercial, p.otrosNombres, p.descripcion, p.rubro, p.cod].join(' '));
@@ -44,6 +41,9 @@ const campo =
 export default function RegistrarVenta() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState('');
+  // Rubro elegido con los botones: muestra sus artículos en grilla con foto,
+  // para quien reconoce la prenda al verla pero no sabe cómo se llama.
+  const [rubroElegido, setRubroElegido] = useState<string | null>(null);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [cantidad, setCantidad] = useState(1);
   const [tipoPrecio, setTipoPrecio] = useState<TipoPrecio>('EFECTIVO');
@@ -105,6 +105,24 @@ export default function RegistrarVenta() {
   }, [busqueda, indiceBusqueda]);
 
   const listaAbierta = mostrarLista && productosFiltrados.length > 0;
+
+  const rubros = useMemo(() => rubrosDe(productos), [productos]);
+  const productosDelRubro = useMemo(
+    () =>
+      rubroElegido
+        ? productos
+            .filter((p) => claveRubro(p.rubro) === rubroElegido)
+            // Primero los que tienen foto: son los que se reconocen de un vistazo.
+            .sort((a, b) => Number(!a.miniatura) - Number(!b.miniatura) || a.nombreComercial.localeCompare(b.nombreComercial, 'es'))
+        : [],
+    [productos, rubroElegido]
+  );
+
+  // Una foto recién subida se ve en el momento, sin volver a pedir la planilla.
+  function alSubirFoto(cod: string, foto: { foto: string; miniatura: string }) {
+    setProductos((ps) => ps.map((p) => (p.cod === cod ? { ...p, ...foto } : p)));
+    setProductoSeleccionado((p) => (p && p.cod === cod ? { ...p, ...foto } : p));
+  }
 
   // La opción marcada tiene que quedar a la vista aunque se navegue con flechas.
   useEffect(() => {
@@ -375,11 +393,12 @@ export default function RegistrarVenta() {
                       seleccionarProducto(p);
                     }}
                     onPointerEnter={() => setIndiceActivo(i)}
-                    className={`flex items-baseline justify-between gap-3 px-3 py-2.5 cursor-pointer border-b border-borde-suave last:border-b-0 ${
+                    className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer border-b border-borde-suave last:border-b-0 ${
                       i === indiceActivo ? 'bg-marca-suave' : ''
                     }`}
                   >
-                    <span className="min-w-0">
+                    <Miniatura producto={p} className="h-11 w-11" />
+                    <span className="min-w-0 flex-1">
                       <span className="block text-sm font-medium text-tinta truncate">
                         {p.nombreComercial}
                       </span>
@@ -413,11 +432,69 @@ export default function RegistrarVenta() {
           </div>
 
           {!productoSeleccionado ? (
-            <p className="text-sm text-tinta-suave border-t border-borde-suave pt-5">
-              Elegí un producto para cargar la venta. Se navega con ↑ ↓ y se elige con Enter.
-            </p>
+            !busqueda.trim() && (
+              <div className="border-t border-borde-suave pt-5 space-y-4">
+                {rubros.length > 0 && (
+                  <div>
+                    <span className="block text-sm font-medium text-tinta-media mb-2">
+                      O buscalo por rubro
+                    </span>
+                    <ChipsRubro rubros={rubros} elegido={rubroElegido} alElegir={setRubroElegido} />
+                  </div>
+                )}
+
+                {rubroElegido && (
+                  <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3" aria-label="Artículos del rubro">
+                    {productosDelRubro.map((p) => (
+                      <li key={p.cod}>
+                        <button
+                          type="button"
+                          onClick={() => seleccionarProducto(p)}
+                          className="block w-full text-left rounded-panel border border-borde-suave p-1.5 transition-colors hover:border-marca"
+                        >
+                          <Miniatura producto={p} className="aspect-square w-full" />
+                          <span className="block mt-1.5 px-0.5 text-sm font-medium leading-tight text-tinta line-clamp-2">
+                            {p.nombreComercial}
+                          </span>
+                          <span className="block px-0.5 text-xs text-tinta-suave tabular">
+                            {formatPrecio(p.precioEfectivo)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {!rubroElegido && (
+                  <p className="text-sm text-tinta-suave">
+                    Escribí arriba qué es, o tocá un rubro para ver sus artículos con foto.
+                  </p>
+                )}
+              </div>
+            )
           ) : (
             <>
+              {/* ── El artículo elegido, con su foto para confirmar que es ese ── */}
+              <div className="flex items-start gap-3">
+                <Miniatura producto={productoSeleccionado} grande className="h-24 w-24" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div>
+                    <p className="text-sm font-medium text-tinta break-words">
+                      {productoSeleccionado.nombreComercial}
+                    </p>
+                    {detalleProducto(productoSeleccionado) && (
+                      <p className="text-xs text-tinta-suave break-words">
+                        {detalleProducto(productoSeleccionado)}
+                      </p>
+                    )}
+                  </div>
+                  <BotonFoto
+                    producto={productoSeleccionado}
+                    alSubir={(f) => alSubirFoto(productoSeleccionado.cod, f)}
+                  />
+                </div>
+              </div>
+
               {/* ── Precio: los tres de la planilla, elegibles ────────────── */}
               <div>
                 <div className="flex items-baseline justify-between gap-3 mb-2">

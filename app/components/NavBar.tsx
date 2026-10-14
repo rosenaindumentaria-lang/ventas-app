@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 const LINKS = [
   { href: '/', label: 'Registrar Venta' },
+  { href: '/articulos', label: 'Artículos' },
   { href: '/historial', label: 'Historial' },
   { href: '/gastos', label: 'Gastos' },
   { href: '/movimientos', label: 'Movimientos' },
