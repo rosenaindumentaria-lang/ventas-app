@@ -66,7 +66,7 @@ export async function getProductos(): Promise<Producto[]> {
 
   const rows = response.data.values || [];
 
-  // Columnas: A=COD, B=RUBRO, C=DESCRIPCION, D=NOMBRE COMERCIAL, E=vacía,
+  // Columnas: A=COD, B=RUBRO, C=DESCRIPCION, D=NOMBRE COMERCIAL, E=OTROS NOMBRES,
   // F=COSTO, G=vacía, H=FINAN, I=EFECTIVO(margen), J=MAYOR(margen),
   // K=IVA, L=UNIDAD(precio), M=EFECTIVO(precio), N=MAYOR(precio)
   return rows
@@ -76,6 +76,7 @@ export async function getProductos(): Promise<Producto[]> {
       rubro: row[1] || '',
       descripcion: row[2] || '',
       nombreComercial: row[3] || '',
+      otrosNombres: row[4] || '',
       costo: parsePrecio(row[5]),
       margenFinan: parseFloat(row[7]) || 0,
       margenEfectivo: parseFloat(row[8]) || 0,

@@ -3,6 +3,10 @@ export interface Producto {
   rubro: string;
   descripcion: string;
   nombreComercial: string;
+  // Otras formas de llamarlo (columna E de BASE DE DATOS): cómo lo nombra la
+  // gente del local o cómo lo describiría alguien que lo ve en la mano. El
+  // buscador las usa, así no hace falta saberse el nombre de la planilla.
+  otrosNombres: string;
   costo: number;
   margenFinan: number;
   margenEfectivo: number;

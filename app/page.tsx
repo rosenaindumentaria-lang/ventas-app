@@ -18,6 +18,25 @@ const PRECIOS: { tipo: TipoPrecio; etiqueta: string; campo: keyof Producto }[] =
 
 const ORIGENES = ['Inta', 'Face', 'Local', 'Otro'] as const;
 
+// La descripción y los otros nombres, sin repetir lo que ya dice el nombre.
+function detalleProducto(p: Producto) {
+  const nombre = normalizar(p.nombreComercial.trim());
+  return [p.descripcion, p.otrosNombres]
+    .map((t) => t.trim())
+    .filter((t) => t && normalizar(t) !== nombre)
+    .join(' · ');
+}
+
+// Minúsculas y sin tildes: "pantalón" y "PANTALON" tienen que dar lo mismo.
+function normalizar(texto: string) {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// Todo lo que se sabe de un producto, junto, para buscar en un solo lugar.
+function textoBuscable(p: Producto) {
+  return normalizar([p.nombreComercial, p.otrosNombres, p.descripcion, p.rubro, p.cod].join(' '));
+}
+
 const campo =
   'w-full border border-borde rounded-panel px-3 py-2 text-sm bg-panel ' +
   'focus:outline-none focus:ring-2 focus:ring-marca focus:border-marca';
@@ -66,18 +85,24 @@ export default function RegistrarVenta() {
 
   const precioManual = precioEscrito ?? precioBase;
 
+  const indiceBusqueda = useMemo(
+    () => productos.map((p) => ({ p, texto: textoBuscable(p), nombre: normalizar(p.nombreComercial) })),
+    [productos]
+  );
+
+  // Cada palabra se busca por separado y en cualquier campo: quien no conoce
+  // el nombre de la planilla busca por lo que ve ("remera negra", "jean 42"),
+  // en cualquier orden. Primero van los que coinciden por el nombre, que es lo
+  // que busca quien sí lo conoce.
   const productosFiltrados = useMemo(() => {
-    if (!busqueda.trim()) return [];
-    const q = busqueda.toLowerCase();
-    return productos
-      .filter(
-        (p) =>
-          p.nombreComercial.toLowerCase().includes(q) ||
-          p.cod.toLowerCase().includes(q) ||
-          p.descripcion.toLowerCase().includes(q)
-      )
-      .slice(0, 8);
-  }, [busqueda, productos]);
+    const q = normalizar(busqueda.trim());
+    if (!q) return [];
+    const palabras = q.split(/\s+/);
+    const encontrados = indiceBusqueda.filter(({ texto }) => palabras.every((w) => texto.includes(w)));
+    const porNombre = encontrados.filter(({ nombre }) => nombre.includes(q));
+    const resto = encontrados.filter(({ nombre }) => !nombre.includes(q));
+    return [...porNombre, ...resto].slice(0, 30).map(({ p }) => p);
+  }, [busqueda, indiceBusqueda]);
 
   const listaAbierta = mostrarLista && productosFiltrados.length > 0;
 
@@ -312,7 +337,7 @@ export default function RegistrarVenta() {
                 }}
                 onFocus={() => setMostrarLista(true)}
                 onKeyDown={alTeclear}
-                placeholder={loading ? 'Cargando productos…' : 'Nombre, código o descripción'}
+                placeholder={loading ? 'Cargando productos…' : 'Qué es, color, talle, código…'}
                 className="w-full border border-borde rounded-panel bg-panel pl-10 pr-10 py-3 text-base focus:outline-none focus:ring-2 focus:ring-marca focus:border-marca"
               />
               {busqueda && (
@@ -358,6 +383,13 @@ export default function RegistrarVenta() {
                       <span className="block text-sm font-medium text-tinta truncate">
                         {p.nombreComercial}
                       </span>
+                      {/* Lo que el producto ES, para distinguirlo de uno
+                          parecido sin saberse el nombre de la planilla. */}
+                      {detalleProducto(p) && (
+                        <span className="block text-xs text-tinta-suave truncate">
+                          {detalleProducto(p)}
+                        </span>
+                      )}
                       <span className="block text-xs text-tinta-tenue truncate">
                         {p.cod}
                         {p.rubro && ` · ${p.rubro}`}
