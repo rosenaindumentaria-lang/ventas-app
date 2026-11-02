@@ -535,7 +535,7 @@ async function asegurarFila(
 }
 
 // Gastos a medio cargar: tienen importe (columna D) pero les falta la fecha
-// (columna A). Se exponen como alerta en /gastos.
+// (columna A). Se exponen como alerta en /movimientos.
 export async function getGastosPendientes(): Promise<GastoPendiente[]> {
   const auth = getAuth();
   const sheets = google.sheets({ version: 'v4', auth });

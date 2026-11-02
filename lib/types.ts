@@ -21,6 +21,17 @@ export interface Producto {
   precioMayor: number;
 }
 
+// "Pago Mercadería" ya no está: la compra de mercadería no es un gasto, es una
+// salida de caja. Su costo se descuenta solo al vender, dentro de la ganancia
+// de cada venta, así que cargarla como gasto la restaba dos veces. Va en
+// TIPOS_SALIDA → Compra de mercadería.
+export const CATEGORIAS_GASTO = [
+  'Gasto Adm',
+  'Gasto Comercializacion',
+  'Gasto Fiscal',
+  'Gasto Financiero',
+] as const;
+
 export interface Gasto {
   id: string;
   fecha: string;
@@ -31,7 +42,7 @@ export interface Gasto {
 }
 
 // Gasto a medio cargar: tiene importe pero le falta la fecha. Se muestra como
-// alerta en /gastos para que alguien lo termine de registrar o lo descarte.
+// alerta en /movimientos para que alguien lo termine de registrar o lo descarte.
 export interface GastoPendiente {
   id: string;
   monto: number;

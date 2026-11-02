@@ -8,13 +8,12 @@ const LINKS = [
   { href: '/', label: 'Registrar Venta' },
   { href: '/articulos', label: 'Artículos' },
   { href: '/historial', label: 'Historial' },
-  { href: '/gastos', label: 'Gastos' },
   { href: '/movimientos', label: 'Movimientos' },
   { href: '/caja', label: 'Caja' },
   { href: '/reportes', label: 'Reportes' },
 ];
 
-// La pantalla de Gastos avisa por acá cuando se completa o descarta un
+// La pantalla de Movimientos avisa por acá cuando se completa o descarta un
 // pendiente, así el globito de la nav se actualiza sin recargar la página.
 export const EVENTO_PENDIENTES = 'gastos-pendientes-actualizados';
 
@@ -45,7 +44,7 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
       .catch(() => setPendientes(0));
   }, []);
 
-  // Al cambiar de pantalla y cada vez que Gastos avisa que algo cambió.
+  // Al cambiar de pantalla y cada vez que Movimientos avisa que algo cambió.
   useEffect(() => {
     contarPendientes();
   }, [contarPendientes, pathname]);
@@ -87,7 +86,7 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
                 className={`${claseLink(l.href)} inline-flex items-center gap-1.5`}
               >
                 {l.label}
-                {l.href === '/gastos' && pendientes > 0 && <Globo n={pendientes} />}
+                {l.href === '/movimientos' && pendientes > 0 && <Globo n={pendientes} />}
               </Link>
             ))}
           </div>
@@ -145,7 +144,7 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
                   className={`py-2.5 inline-flex items-center gap-2 ${claseLink(l.href)}`}
                 >
                   {l.label}
-                  {l.href === '/gastos' && pendientes > 0 && <Globo n={pendientes} />}
+                  {l.href === '/movimientos' && pendientes > 0 && <Globo n={pendientes} />}
                 </Link>
               ))}
             </div>
