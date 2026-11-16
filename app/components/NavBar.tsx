@@ -4,12 +4,39 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
+// Escritorio: todos los links arriba.
 const LINKS = [
   { href: '/', label: 'Registrar Venta' },
   { href: '/articulos', label: 'Artículos' },
   { href: '/historial', label: 'Historial' },
   { href: '/movimientos', label: 'Movimientos' },
+  { href: '/stock', label: 'Stock' },
   { href: '/caja', label: 'Caja' },
+  { href: '/reportes', label: 'Reportes' },
+];
+
+// Celular: barra fija abajo con lo que se usa todos los días, al alcance del
+// pulgar. El resto va en "Más". Los íconos son trazos simples para que no
+// pesen ni dependan de una librería.
+const TRAZOS = {
+  venta: 'M6 6h15l-1.5 9h-12zM6 6 5 3H2M9 20a1 1 0 1 0 0 .01M17 20a1 1 0 1 0 0 .01',
+  historial: 'M4 5h16M4 10h16M4 15h10M4 20h7',
+  movimientos: 'M7 4v14m0 0-3-3m3 3 3-3M17 20V6m0 0-3 3m3-3 3 3',
+  caja: 'M3 7h18v12H3zM3 7l2-3h14l2 3M16 13h2',
+  mas: 'M5 12h.01M12 12h.01M19 12h.01',
+} as const;
+
+const TABS = [
+  { href: '/', label: 'Venta', trazo: TRAZOS.venta },
+  { href: '/historial', label: 'Historial', trazo: TRAZOS.historial },
+  { href: '/movimientos', label: 'Movimientos', trazo: TRAZOS.movimientos },
+  { href: '/caja', label: 'Caja', trazo: TRAZOS.caja },
+];
+
+// Lo que no entra en la barra de abajo.
+const MAS_LINKS = [
+  { href: '/articulos', label: 'Artículos' },
+  { href: '/stock', label: 'Stock' },
   { href: '/reportes', label: 'Reportes' },
 ];
 
@@ -18,24 +45,47 @@ const LINKS = [
 export const EVENTO_PENDIENTES = 'gastos-pendientes-actualizados';
 
 // Globito rojo con la cantidad de gastos a medio registrar.
-function Globo({ n }: { n: number }) {
+function Globo({ n, chico = false }: { n: number; chico?: boolean }) {
   return (
     <span
       title={`${n} ${n === 1 ? 'gasto a medio registrar' : 'gastos a medio registrar'}`}
-      className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-rojo px-1.5 text-[11px] font-bold leading-[18px] text-white"
+      className={`inline-flex items-center justify-center rounded-full bg-rojo font-bold text-white ${
+        chico
+          ? 'absolute -right-2 -top-1 min-w-[16px] px-1 text-[10px] leading-4'
+          : 'min-w-[18px] px-1.5 text-[11px] leading-[18px]'
+      }`}
     >
       {n}
     </span>
   );
 }
 
+function Icono({ trazo }: { trazo: string }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={trazo} />
+    </svg>
+  );
+}
+
 export default function NavBar({ nombre, rol }: { nombre: string; rol: string }) {
-  const [abierto, setAbierto] = useState(false);
+  const [masAbierto, setMasAbierto] = useState(false);
   const [saliendo, setSaliendo] = useState(false);
   const [pendientes, setPendientes] = useState(0);
   const pathname = usePathname();
 
   const links = rol === 'admin' ? [...LINKS, { href: '/usuarios', label: 'Usuarios' }] : LINKS;
+  const masLinks = rol === 'admin' ? [...MAS_LINKS, { href: '/usuarios', label: 'Usuarios' }] : MAS_LINKS;
 
   const contarPendientes = useCallback(() => {
     fetch('/api/gastos/pendientes')
@@ -67,103 +117,124 @@ export default function NavBar({ nombre, rol }: { nombre: string; rol: string })
     }`;
   }
 
+  // "Más" se marca activo si estás en alguna de sus pantallas.
+  const enMas = masLinks.some((l) => pathname === l.href);
+
   return (
-    <nav className="bg-panel border-b border-borde">
-      <div className="max-w-5xl mx-auto px-4">
-        {/* Barra principal */}
-        <div className="flex items-center justify-between h-14">
-          <Link href="/" className="shrink-0" onClick={() => setAbierto(false)}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Rosena" className="h-7 w-auto" />
-          </Link>
+    <>
+      {/* Barra de arriba: en el celular, sólo el logo y quién está usando la app. */}
+      <nav className="bg-panel border-b border-borde">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
+            <Link href="/" className="shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Rosena" className="h-7 w-auto" />
+            </Link>
 
-          {/* Links en escritorio */}
-          <div className="hidden md:flex items-center gap-4 lg:gap-6">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`${claseLink(l.href)} inline-flex items-center gap-1.5`}
-              >
-                {l.label}
-                {l.href === '/movimientos' && pendientes > 0 && <Globo n={pendientes} />}
-              </Link>
-            ))}
-          </div>
-
-          {/* Usuario + salir en escritorio */}
-          <div className="hidden md:flex items-center gap-3 text-sm">
-            <span className="text-tinta-suave">
-              {nombre}
-              {rol === 'admin' && <span className="ml-1 text-tinta-tenue">(admin)</span>}
-            </span>
-            <button
-              onClick={salir}
-              disabled={saliendo}
-              className="rounded bg-marca px-3 py-1 font-medium text-white hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
-            >
-              {saliendo ? 'Saliendo…' : 'Salir'}
-            </button>
-          </div>
-
-          {/* Botón hamburguesa en mobile */}
-          <button
-            onClick={() => setAbierto((v) => !v)}
-            className="md:hidden relative p-2 -mr-2 text-tinta-media"
-            aria-label={pendientes > 0 ? `Menú (${pendientes} gastos a medio registrar)` : 'Menú'}
-            aria-expanded={abierto}
-          >
-            {/* En mobile los links están escondidos: el puntito avisa igual. */}
-            {pendientes > 0 && !abierto && (
-              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-rojo ring-2 ring-panel" />
-            )}
-            {abierto ? (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="6" y1="6" x2="18" y2="18" />
-                <line x1="6" y1="18" x2="18" y2="6" />
-              </svg>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {/* Menú desplegable en mobile */}
-        {abierto && (
-          <div className="md:hidden border-t border-borde-suave py-2">
-            <div className="flex flex-col">
+            {/* Links en escritorio */}
+            <div className="hidden md:flex items-center gap-4 lg:gap-6">
               {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  onClick={() => setAbierto(false)}
-                  className={`py-2.5 inline-flex items-center gap-2 ${claseLink(l.href)}`}
+                  className={`${claseLink(l.href)} inline-flex items-center gap-1.5`}
                 >
                   {l.label}
                   {l.href === '/movimientos' && pendientes > 0 && <Globo n={pendientes} />}
                 </Link>
               ))}
             </div>
-            <div className="mt-2 pt-3 border-t border-borde-suave flex items-center justify-between">
-              <span className="text-sm text-tinta-suave">
+
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-tinta-suave">
                 {nombre}
-                {rol === 'admin' && <span className="ml-1 text-tinta-tenue">(admin)</span>}
+                {rol === 'admin' && <span className="ml-1 text-tinta-tenue hidden sm:inline">(admin)</span>}
               </span>
               <button
                 onClick={salir}
                 disabled={saliendo}
-                className="rounded bg-marca px-4 py-1.5 text-sm font-medium text-white hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
+                className="hidden md:block rounded bg-marca px-3 py-1 font-medium text-white hover:bg-marca-fuerte disabled:opacity-50 transition-colors"
               >
                 {saliendo ? 'Saliendo…' : 'Salir'}
               </button>
             </div>
           </div>
+        </div>
+      </nav>
+
+      {/* Barra de abajo: sólo celular. */}
+      <div className="md:hidden">
+        {masAbierto && (
+          <>
+            <button
+              aria-label="Cerrar menú"
+              className="fixed inset-0 z-30 bg-tinta/30"
+              onClick={() => setMasAbierto(false)}
+            />
+            <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 panel p-2 shadow-flotante">
+              {masLinks.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setMasAbierto(false)}
+                  className={`block rounded-panel px-3 py-3 ${claseLink(l.href)} ${
+                    pathname === l.href ? 'bg-marca-suave' : ''
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              ))}
+              <button
+                onClick={salir}
+                disabled={saliendo}
+                className="mt-1 w-full rounded-panel border-t border-borde-suave px-3 py-3 text-left text-sm font-medium text-rojo disabled:opacity-50"
+              >
+                {saliendo ? 'Saliendo…' : 'Salir'}
+              </button>
+            </div>
+          </>
         )}
+
+        <nav
+          aria-label="Secciones"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-borde bg-panel pb-[env(safe-area-inset-bottom)]"
+        >
+          <ul className="grid grid-cols-5">
+            {TABS.map((t) => {
+              const activo = pathname === t.href;
+              return (
+                <li key={t.href}>
+                  <Link
+                    href={t.href}
+                    aria-current={activo ? 'page' : undefined}
+                    className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium ${
+                      activo ? 'text-marca' : 'text-tinta-suave'
+                    }`}
+                  >
+                    <span className="relative">
+                      <Icono trazo={t.trazo} />
+                      {t.href === '/movimientos' && pendientes > 0 && <Globo n={pendientes} chico />}
+                    </span>
+                    {t.label}
+                  </Link>
+                </li>
+              );
+            })}
+            <li>
+              <button
+                onClick={() => setMasAbierto((v) => !v)}
+                aria-expanded={masAbierto}
+                className={`flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-medium ${
+                  enMas || masAbierto ? 'text-marca' : 'text-tinta-suave'
+                }`}
+              >
+                <Icono trazo={TRAZOS.mas} />
+                Más
+              </button>
+            </li>
+          </ul>
+        </nav>
       </div>
-    </nav>
+    </>
   );
 }

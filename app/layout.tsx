@@ -29,6 +29,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#f2eee7',
+  // Para que el ancho útil llegue hasta el borde en celulares con muesca y la
+  // barra de abajo respete el espacio del gesto de inicio.
+  viewportFit: 'cover',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +41,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="es">
       <body className={`${geist.variable} ${serif.variable} min-h-screen`}>
         {sesion && <NavBar nombre={sesion.nombre} rol={sesion.rol} />}
-        <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+        {/* En el celular, lugar para la barra fija de abajo (4rem + el gesto de inicio). */}
+        <main className="max-w-5xl mx-auto px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:py-8">{children}</main>
       </body>
     </html>
   );

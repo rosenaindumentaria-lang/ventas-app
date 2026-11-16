@@ -4,8 +4,8 @@
   "description": "Gestión de ventas de Rosena Indumentaria",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#f2eee7",
+  "theme_color": "#f2eee7",
   "icons": [
     {
       "src": "/icon-512.png",

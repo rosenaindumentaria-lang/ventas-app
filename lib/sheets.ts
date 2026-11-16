@@ -5,9 +5,12 @@ import type {
   Gasto,
   GastoPendiente,
   MovimientoCaja,
+  MovimientoStock,
+  TipoStock,
   Usuario,
   RolUsuario,
 } from './types';
+import { TIPOS_STOCK } from './types';
 
 export type { Producto, Venta, Gasto, GastoPendiente, MovimientoCaja, Usuario, RolUsuario };
 
@@ -16,6 +19,7 @@ const SHEET_PRODUCTOS = 'BASE DE DATOS';
 const SHEET_VENTAS = 'Ventas';
 const SHEET_GASTOS = 'Gastos';
 const SHEET_MOVIMIENTOS = 'MOVIMIENTOS';
+const SHEET_STOCK = 'STOCK';
 const SHEET_USUARIOS = 'USUARIOS';
 const SHEET_FOTOS = 'FOTOS';
 
@@ -753,6 +757,123 @@ async function ensureMovimientosSheet(sheets: ReturnType<typeof google.sheets>) 
       range: `${SHEET_MOVIMIENTOS}!A1:E1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [['FECHA', 'TIPO', 'DETALLE', 'IMPORTE', 'USUARIO']] },
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (!msg.includes('already exists')) throw error;
+  }
+}
+
+// ── STOCK ─────────────────────────────────────────────────────────────────────
+
+// Estructura de la hoja STOCK: A=FECHA, B=COD, C=TIPO, D=CANTIDAD, E=DETALLE,
+// F=USUARIO. Es un libro de hechos (conteos, compras, ajustes); el stock de cada
+// artículo se calcula en lib/stock.ts. Va en una hoja aparte y BASE DE DATOS no
+// se toca: ahí sigue el catálogo, que se mantiene a mano.
+
+export async function getMovimientosStock(): Promise<MovimientoStock[]> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_STOCK}!A2:F20000`,
+    });
+
+    return (response.data.values || [])
+      .map((row, i) => ({ row, sheetRow: i + 2 }))
+      .filter(
+        ({ row }) =>
+          row[0] && row[1] && (TIPOS_STOCK as readonly string[]).includes((row[2] || '').toString())
+      )
+      .map(({ row, sheetRow }) => ({
+        id: String(sheetRow),
+        fecha: normalizarFecha(row[0] || '', ''),
+        cod: row[1].toString().trim(),
+        tipo: row[2] as TipoStock,
+        // Con signo: un ajuste negativo es una pérdida. parsePrecio descarta el
+        // signo, así que se parsea aparte.
+        cantidad: parseFloat((row[3] || '0').toString().replace(',', '.')) || 0,
+        detalle: row[4] || '',
+        usuario: row[5] || '',
+      }));
+  } catch {
+    // La hoja todavía no existe: nadie empezó a llevar stock.
+    return [];
+  }
+}
+
+// Escribe varios hechos de una (ej. el conteo de un rubro entero) con una sola
+// lectura de la próxima fila libre y una sola escritura.
+export async function registrarMovimientosStock(
+  movs: Omit<MovimientoStock, 'id'>[]
+): Promise<void> {
+  if (movs.length === 0) return;
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  await ensureStockSheet(sheets);
+
+  const filas = movs.map((m) => [m.fecha, m.cod, m.tipo, m.cantidad, m.detalle, m.usuario || '']);
+  const proxima = await proximaFilaLibre(sheets, SHEET_STOCK, 'F');
+  await asegurarFila(sheets, SHEET_STOCK, proxima + filas.length - 1);
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_STOCK}!A${proxima}:F${proxima + filas.length - 1}`,
+    // RAW: el código tiene que quedar como texto ("007" no es 7) y la fecha
+    // como la mandamos.
+    valueInputOption: 'RAW',
+    requestBody: { values: filas },
+  });
+}
+
+export async function borrarMovimientoStock(id: string): Promise<void> {
+  const auth = getAuth();
+  const sheets = google.sheets({ version: 'v4', auth });
+
+  const fila = parseInt(id, 10);
+  if (!fila || fila < 2) throw new Error('Movimiento de stock inválido');
+
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hoja = (spreadsheet.data.sheets || []).find(
+    (s) => (s.properties?.title || '').trim().toLowerCase() === SHEET_STOCK.toLowerCase()
+  );
+  const sheetId = hoja?.properties?.sheetId;
+  if (sheetId == null) throw new Error('No existe la hoja STOCK');
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: { sheetId, dimension: 'ROWS', startIndex: fila - 1, endIndex: fila },
+          },
+        },
+      ],
+    },
+  });
+}
+
+async function ensureStockSheet(sheets: ReturnType<typeof google.sheets>) {
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+  const hojas = (spreadsheet.data.sheets || []).map((s) =>
+    (s.properties?.title || '').trim().toLowerCase()
+  );
+  if (hojas.includes(SHEET_STOCK.toLowerCase())) return;
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: SHEET_STOCK } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_STOCK}!A1:F1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [['FECHA', 'COD', 'TIPO', 'CANTIDAD', 'DETALLE', 'USUARIO']] },
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

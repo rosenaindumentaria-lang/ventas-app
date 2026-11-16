@@ -106,3 +106,40 @@ export interface Usuario {
   rol: RolUsuario;
   activo: boolean;
 }
+
+// ── STOCK ─────────────────────────────────────────────────────────────────────
+//
+// El stock no se guarda: se calcula. Lo que se guarda es un libro de hechos
+// (hoja STOCK) y el stock de hoy sale de sumarlos y restarle las ventas.
+//  - CONTEO: se contó el artículo y había `cantidad`. Es una foto al CIERRE de
+//    esa fecha y reemplaza todo lo anterior de ese artículo.
+//  - COMPRA: entraron `cantidad` unidades (positivo).
+//  - AJUSTE: corrección con signo (rotura, regalo, error de carga).
+export type TipoStock = 'CONTEO' | 'COMPRA' | 'AJUSTE';
+
+export const TIPOS_STOCK: readonly TipoStock[] = ['CONTEO', 'COMPRA', 'AJUSTE'];
+
+export interface MovimientoStock {
+  id: string;
+  fecha: string;
+  cod: string;
+  tipo: TipoStock;
+  cantidad: number;
+  detalle: string;
+  usuario?: string;
+}
+
+// Una fila de la pantalla de stock: el artículo con su existencia calculada.
+export interface FilaStock {
+  cod: string;
+  nombre: string;
+  rubro: string;
+  costo: number;
+  // null = nadie lo contó ni lo compró todavía: no se sabe cuánto hay.
+  stock: number | null;
+  // stock x costo; 0 si no se sabe, no hay costo o el stock es negativo.
+  valor: number;
+  // Fecha desde la que se lleva la cuenta (último conteo o primera compra).
+  desde: string;
+  ultimoMov: string;
+}

@@ -65,6 +65,9 @@ export default function Movimientos() {
   const [guardando, setGuardando] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+  // En el celular el formulario está plegado hasta que se lo pide; en escritorio
+  // siempre se ve. Editar o completar un pendiente lo abre solo.
+  const [formAbierto, setFormAbierto] = useState(false);
 
   // Filtros de la lista
   const [fechaDesde, setFechaDesde] = useState('');
@@ -117,6 +120,7 @@ export default function Movimientos() {
 
   function empezarEdicion(o: Operacion) {
     setEditando({ clase: o.clase, id: o.id });
+    setFormAbierto(true);
     // El sentido sale del signo guardado, no del nombre del tipo.
     setSentido(o.monto >= 0 ? 'entrada' : 'salida');
     setTipo(o.tipo);
@@ -132,6 +136,7 @@ export default function Movimientos() {
   // usuario esta descartando lo que estaba haciendo.
   function limpiarFormulario() {
     setEditando(null);
+    setFormAbierto(false);
     setSentido('entrada');
     setTipo(TIPOS_ENTRADA[0]);
     setDetalle('');
@@ -185,6 +190,7 @@ export default function Movimientos() {
   // escritura, y no hay riesgo de que se corran las filas en el medio.
   function completarPendiente(p: GastoPendiente) {
     setEditando({ clase: 'gasto', id: p.id });
+    setFormAbierto(true);
     setSentido('salida');
     setTipo(CATEGORIAS_GASTO[0]);
     setDetalle('');
@@ -359,7 +365,7 @@ export default function Movimientos() {
   return (
     <div>
       <h1 className="font-display text-3xl font-normal text-tinta mb-2">Movimientos</h1>
-      <p className="text-sm text-tinta-suave mb-6">
+      <p className="text-xs md:text-sm text-tinta-suave mb-4 md:mb-6">
         Toda la plata que entra o sale sin ser una venta. Los <strong>gastos</strong> del negocio
         bajan la ganancia; el resto (préstamos, aportes, devoluciones, retiros, compras de
         mercadería o bienes) mueve el saldo de caja pero no cuenta como gasto.
@@ -407,16 +413,65 @@ export default function Movimientos() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Resumen: va arriba y sigue a los filtros de la lista. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
+        <div className="panel p-3 md:p-4">
+          <p className="text-xs text-tinta-suave">Entradas</p>
+          <p className="mt-0.5 text-base md:text-lg font-semibold text-verde tabular">{formatPrecio(totalEntradas)}</p>
+        </div>
+        <div className="panel p-3 md:p-4">
+          <p className="text-xs text-tinta-suave">Gastos</p>
+          <p className="mt-0.5 text-base md:text-lg font-semibold text-rojo tabular">{formatPrecio(totalGastos)}</p>
+          <p className="text-[11px] text-tinta-tenue">{formatPrecio(gastosDelMes)} este mes</p>
+        </div>
+        <div className="panel p-3 md:p-4">
+          <p className="text-xs text-tinta-suave">Otras salidas</p>
+          <p className="mt-0.5 text-base md:text-lg font-semibold text-ocre tabular">{formatPrecio(totalOtrasSalidas)}</p>
+        </div>
+        <div className="panel p-3 md:p-4">
+          <p className="text-xs text-tinta-suave">Neto en caja</p>
+          <p className={`mt-0.5 text-base md:text-lg font-semibold tabular ${neto >= 0 ? 'text-verde' : 'text-ocre'}`}>
+            {formatPrecio(neto)}
+          </p>
+        </div>
+      </div>
+
+      {mensaje && (
+        <p
+          role="status"
+          className={`mb-4 rounded-panel px-3 py-2 text-sm font-medium ${
+            mensaje.tipo === 'ok' ? 'bg-verde-suave text-verde' : 'bg-rojo-suave text-rojo'
+          }`}
+        >
+          {mensaje.texto}
+        </p>
+      )}
+
+      {/* Celular: el formulario se despliega con este botón. */}
+      {!formAbierto && (
+        <button
+          type="button"
+          onClick={() => setFormAbierto(true)}
+          className="md:hidden mb-4 w-full rounded-panel bg-marca py-3 text-sm font-semibold text-white active:bg-marca-fuerte"
+        >
+          + Cargar movimiento
+        </button>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
         {/* Formulario */}
-        <div className={`panel p-6 space-y-4 h-fit ${editando ? 'ring-2 ring-marca' : ''}`}>
+        <div
+          className={`${formAbierto ? 'block' : 'hidden'} md:block panel p-4 md:p-6 space-y-4 h-fit ${editando ? 'ring-2 ring-marca' : ''}`}
+        >
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-normal text-tinta">{tituloForm}</h2>
-            {editando && (
-              <button type="button" onClick={cancelarEdicion} className="text-xs text-marca hover:underline">
-                Cancelar
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              className={`${editando ? '' : 'md:hidden'} py-1 pl-3 text-sm text-marca hover:underline`}
+            >
+              {editando ? 'Cancelar' : 'Cerrar'}
+            </button>
           </div>
 
           {completandoPendiente && (
@@ -548,41 +603,6 @@ export default function Movimientos() {
                     ? 'Registrar gasto'
                     : 'Registrar salida'}
           </button>
-
-          {mensaje && (
-            <p
-              className={`text-sm text-center font-medium ${
-                mensaje.tipo === 'ok' ? 'text-verde' : 'text-rojo'
-              }`}
-            >
-              {mensaje.texto}
-            </p>
-          )}
-
-          <div className="border-t pt-3 space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-tinta-suave">Entradas</span>
-              <span className="font-medium text-verde">{formatPrecio(totalEntradas)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-tinta-suave">Gastos</span>
-              <span className="font-medium text-rojo">{formatPrecio(totalGastos)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-tinta-suave">Otras salidas</span>
-              <span className="font-medium text-ocre">{formatPrecio(totalOtrasSalidas)}</span>
-            </div>
-            <div className="flex justify-between border-t pt-1.5">
-              <span className="text-tinta-suave">Neto en caja</span>
-              <span className={`font-bold ${neto >= 0 ? 'text-verde' : 'text-ocre'}`}>
-                {formatPrecio(neto)}
-              </span>
-            </div>
-            <div className="flex justify-between border-t pt-1.5">
-              <span className="text-tinta-suave">Gastos del mes actual</span>
-              <span className="font-bold text-rojo">{formatPrecio(gastosDelMes)}</span>
-            </div>
-          </div>
         </div>
 
         {/* Lista */}
@@ -633,7 +653,7 @@ export default function Movimientos() {
                   : 'No hay movimientos registrados'}
               </p>
             ) : (
-              <ul className="divide-y divide-borde-suave max-h-[520px] overflow-y-auto">
+              <ul className="divide-y divide-borde-suave md:max-h-[520px] md:overflow-y-auto">
                 {filtradas.map((o) => {
                   const entra = o.monto > 0;
                   const color = entra ? 'text-verde' : o.clase === 'gasto' ? 'text-rojo' : 'text-ocre';
@@ -641,7 +661,7 @@ export default function Movimientos() {
                   return (
                     <li
                       key={`${o.clase}-${o.id}`}
-                      className={`px-5 py-3 flex items-center justify-between gap-3 ${
+                      className={`px-4 md:px-5 py-3 flex items-center justify-between gap-2 md:gap-3 ${
                         enEdicion ? 'bg-marca-suave' : ''
                       }`}
                     >
@@ -658,18 +678,24 @@ export default function Movimientos() {
                       <button
                         onClick={() => empezarEdicion(o)}
                         disabled={procesando}
-                        className="text-tinta-tenue hover:text-marca-fuerte transition-colors disabled:opacity-50 shrink-0"
+                        className="-my-2 p-2 text-tinta-suave hover:text-marca-fuerte transition-colors disabled:opacity-50 shrink-0"
                         title="Editar"
+                        aria-label="Editar"
                       >
-                        ✏️
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" />
+                        </svg>
                       </button>
                       <button
                         onClick={() => borrar(o)}
                         disabled={procesando}
-                        className="text-tinta-tenue hover:text-rojo transition-colors disabled:opacity-50 shrink-0"
+                        className="-my-2 -mr-2 p-2 text-tinta-suave hover:text-rojo transition-colors disabled:opacity-50 shrink-0"
                         title="Borrar"
+                        aria-label="Borrar"
                       >
-                        🗑️
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                        </svg>
                       </button>
                     </li>
                   );
